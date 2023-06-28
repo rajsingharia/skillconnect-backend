@@ -1,6 +1,7 @@
 package com.ssds.skillconnect.repository;
 
 import com.ssds.skillconnect.dao.Post;
+import com.ssds.skillconnect.dao.Skill;
 import com.ssds.skillconnect.model.PostRowResponseModel;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,15 +22,16 @@ public interface PostRepository extends JpaRepository<Post, Integer> {
             "p.urgencyLevel, " +
             "p.project.projectName, " +
             "p.project.department.departmentName, " +
-            "p.listOfSkillsRequired, " +
             "p.createdOn) " +
             "FROM Post p " +
             "WHERE (:departmentId IS NULL OR p.project.department.departmentId = :departmentId) " +
             "AND (:urgencyLevel IS NULL OR p.urgencyLevel = :urgencyLevel) " +
+            "AND (:skill IS NULL OR lower(:skill) IN (SELECT lower(s.skillName) FROM p.listOfSkillsRequired l JOIN Skill s ON l.skillId = s.skillId)) " +
             "ORDER BY p.createdOn DESC")
-    List<PostRowResponseModel> findByDepartmentIdAndPriorityDESCRowResponseModel(
+    List<PostRowResponseModel> findByDepartmentIdAndPriorityDESCRowResponseModelAndSkill(
             @Param("departmentId") Integer departmentId,
-            @Param("urgencyLevel") Integer urgencyLevel
+            @Param("urgencyLevel") Integer urgencyLevel,
+            @Param("skill") String skill
     );
 
     @Query("SELECT new com.ssds.skillconnect.model.PostRowResponseModel(" +
@@ -39,15 +41,16 @@ public interface PostRepository extends JpaRepository<Post, Integer> {
             "p.urgencyLevel, " +
             "p.project.projectName, " +
             "p.project.department.departmentName, " +
-            "p.listOfSkillsRequired, " +
             "p.createdOn) " +
             "FROM Post p " +
             "WHERE (:departmentId IS NULL OR p.project.department.departmentId = :departmentId) " +
             "AND (:urgencyLevel IS NULL OR p.urgencyLevel = :urgencyLevel) " +
+            "AND (:skill IS NULL OR lower(:skill) IN (SELECT lower(s.skillName) FROM p.listOfSkillsRequired l JOIN Skill s ON l.skillId = s.skillId)) " +
             "ORDER BY p.createdOn ASC")
-    List<PostRowResponseModel> findByDepartmentIdAndPriorityASCRowResponseModel(
+    List<PostRowResponseModel> findByDepartmentIdAndPriorityASCRowResponseModelAndSkill(
             @Param("departmentId") Integer departmentId,
-            @Param("urgencyLevel") Integer urgencyLevel
+            @Param("urgencyLevel") Integer urgencyLevel,
+            @Param("skill") String skill
     );
 
     @Query("SELECT new com.ssds.skillconnect.model.PostRowResponseModel(" +
@@ -57,7 +60,6 @@ public interface PostRepository extends JpaRepository<Post, Integer> {
             "p.urgencyLevel, " +
             "p.project.projectName, " +
             "p.project.department.departmentName, " +
-            "p.listOfSkillsRequired, " +
             "p.createdOn) " +
             "FROM Post p " +
             "ORDER BY p.createdOn DESC")
@@ -69,4 +71,8 @@ public interface PostRepository extends JpaRepository<Post, Integer> {
             @Param("isOpen") boolean isOpen,
             @Param("thresholdDate") LocalDate thresholdDate
     );
+
+    @Query("SELECT p.listOfSkillsRequired FROM Post p WHERE p.postId = :postId")
+    List<Skill> findSkillsByPostId(@Param("postId") Integer postId);
+
 }

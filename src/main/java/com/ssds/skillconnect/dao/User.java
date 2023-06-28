@@ -58,7 +58,16 @@ public class User implements UserDetails {
     @Column(columnDefinition = "TEXT", length = 10000)
     private String experience = "";
 
-    private List<String> listOfSkills = new ArrayList<>();
+
+    @ManyToMany
+    @JoinTable(
+            name = "user_skill_mapping",
+            joinColumns = @JoinColumn(name = "skill_user_id", referencedColumnName = "userId"),
+            inverseJoinColumns = @JoinColumn(name = "skill_id", referencedColumnName = "skillId"))
+
+    private List<Skill> listOfSkills = new ArrayList<>();
+
+    //private List<String> listOfSkills = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     private Role role;

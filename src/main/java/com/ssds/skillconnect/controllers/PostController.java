@@ -5,6 +5,7 @@ import com.ssds.skillconnect.service.PostService;
 import com.ssds.skillconnect.dao.Post;
 import com.ssds.skillconnect.dao.User;
 import com.ssds.skillconnect.model.PostCreateRequestModel;
+import com.ssds.skillconnect.utils.exception.ApiRequestException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -26,6 +27,7 @@ public class PostController {
             @RequestParam(required = false) String skill,
             @RequestParam(required = false) Integer sort
     ) {
+        //throw new ApiRequestException("This is a test exception");
         return postService.getAllPosts(authorizationHeader, departmentId, priority, skill, sort);
     }
 

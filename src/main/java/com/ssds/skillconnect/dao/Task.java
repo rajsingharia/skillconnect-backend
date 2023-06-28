@@ -37,4 +37,13 @@ public class Task {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Project project;
 
+//    @ManyToOne
+//    @JoinTable(
+//            name = "task_user_mapping",
+//            joinColumns = @JoinColumn(name = "task_id", referencedColumnName = "taskId"),
+//            inverseJoinColumns = @JoinColumn(name = "user_id", referencedColumnName = "userId")
+//    )
+//    @OnDelete(action = OnDeleteAction.CASCADE)
+//    private User user;
+
 }

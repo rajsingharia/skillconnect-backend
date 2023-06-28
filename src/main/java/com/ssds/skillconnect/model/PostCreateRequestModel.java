@@ -12,21 +12,12 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PostCreateRequestModel {
-
     private Integer projectId;
-
     private String postTitle;
-
     private String postDescription;
-
     private Integer urgencyLevel;
-
-    private List<String> listOfSkillsRequired = new ArrayList<>();
-
+    private List<String> listOfSkillStringsRequired = new ArrayList<>();
     private Integer totalApplicants = 0;
-
     private Boolean isOpen = true;
-
     private Timestamp createdOn = new Timestamp(System.currentTimeMillis());
-
 }

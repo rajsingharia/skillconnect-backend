@@ -3,19 +3,23 @@ package com.ssds.skillconnect.service;
 import com.ssds.skillconnect.config.JwtService;
 import com.ssds.skillconnect.dao.Department;
 import com.ssds.skillconnect.dao.Post;
+import com.ssds.skillconnect.dao.Skill;
 import com.ssds.skillconnect.dao.User;
 import com.ssds.skillconnect.model.UserDetailResponseModel;
 import com.ssds.skillconnect.model.UserModel;
 import com.ssds.skillconnect.model.UserSearchResponseModel;
 import com.ssds.skillconnect.repository.DepartmentRepository;
 import com.ssds.skillconnect.repository.PostRepository;
+import com.ssds.skillconnect.repository.SkillRepository;
 import com.ssds.skillconnect.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +28,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final DepartmentRepository departmentRepository;
     private final PostRepository postRepository;
+    private final SkillRepository skillRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
@@ -32,8 +37,13 @@ public class UserService {
             String jwtToken = authorizationHeader.substring(7);
             String userEmail = jwtService.extractUserEmail(jwtToken);
 
-            return userRepository.findUserDetailResponseModelByEmail(userEmail)
+            UserDetailResponseModel userDetailResponseModel = userRepository.findUserDetailResponseModelByEmail(userEmail)
                     .orElseThrow(() -> new RuntimeException("User not found"));
+
+            userDetailResponseModel.setListOfSkills(userRepository.findListOfSkillsByUserId(userDetailResponseModel.getUserId()));
+
+            return userDetailResponseModel;
+
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
@@ -51,7 +61,21 @@ public class UserService {
         userToUpdate.setEmail(userModel.getEmail());
         //userToUpdate.setPassword(passwordEncoder.encode(userModel.getPassword()));
         userToUpdate.setExperience(userModel.getExperience());
-        userToUpdate.setListOfSkills(userModel.getListOfSkills());
+
+        List<Skill> listOfSkills = new ArrayList<>();
+
+        userModel.getListOfSkillStrings().forEach( skillName -> {
+            Optional<Skill> skill = skillRepository.findBySkillName(skillName);
+            if (skill.isPresent()) {
+                listOfSkills.add(skill.get());
+            } else {
+                Skill newSkill = new Skill();
+                newSkill.setSkillName(skillName);
+                listOfSkills.add(newSkill);
+            }
+        });
+
+        userToUpdate.setListOfSkills(listOfSkills);
 
         Department department = departmentRepository.findById(userModel.getDepartmentId())
                 .orElseThrow(() -> new RuntimeException("Department not found"));
@@ -61,8 +85,13 @@ public class UserService {
         try {
             userRepository.save(userToUpdate);
 
-            return userRepository.findUserDetailResponseModelByEmail(userEmail)
+            UserDetailResponseModel userDetailResponseModel = userRepository.findUserDetailResponseModelByEmail(userEmail)
                     .orElseThrow(() -> new RuntimeException("User not found"));
+
+            userDetailResponseModel.setListOfSkills(userRepository.findListOfSkillsByUserId(userDetailResponseModel.getUserId()));
+
+            return userDetailResponseModel;
+
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }
@@ -70,8 +99,15 @@ public class UserService {
 
     public List<UserDetailResponseModel> getAllUsersByDepartmentId(Integer departmentId) {
         try {
-            return userRepository.findUserDetailResponseModelByDepartmentId(departmentId)
+            List<UserDetailResponseModel> userDetailResponseModelList = userRepository.findUserDetailResponseModelByDepartmentId(departmentId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
+
+            for (UserDetailResponseModel userDetailResponseModel : userDetailResponseModelList) {
+                userDetailResponseModel.setListOfSkills(userRepository.findListOfSkillsByUserId(userDetailResponseModel.getUserId()));
+            }
+
+            return userDetailResponseModelList;
+
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
         }

@@ -1,15 +1,18 @@
 package com.ssds.skillconnect.model;
 
+import com.ssds.skillconnect.dao.Skill;
+import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.sql.Array;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Data
-@NoArgsConstructor
 public class PostRowResponseModel {
     private Integer postId;
     private String postTitle;
@@ -17,20 +20,30 @@ public class PostRowResponseModel {
     private Integer urgencyLevel;
     private String projectName;
     private String departmentName;
-    private List<String> listOfSkillsRequired;
+    private List<Skill> listOfSkillsRequired = null;
     private Timestamp createdOn;
     private Boolean isSaved;
 
-    public PostRowResponseModel(Integer postId, String postTitle, String postDescription, Integer urgencyLevel, String projectName, String departmentName, List<String> listOfSkillsRequired, Timestamp createdOn) {
+    public PostRowResponseModel() {
+        isSaved = false;
+    }
+
+    public PostRowResponseModel(Integer postId,
+                                String postTitle,
+                                String postDescription,
+                                Integer urgencyLevel,
+                                String projectName,
+                                String departmentName,
+                                Timestamp createdOn) {
         this.postId = postId;
         this.postTitle = postTitle;
         this.postDescription = postDescription;
         this.urgencyLevel = urgencyLevel;
         this.projectName = projectName;
         this.departmentName = departmentName;
-        this.listOfSkillsRequired = listOfSkillsRequired;
         this.createdOn = createdOn;
-        isSaved = false;
+        this.listOfSkillsRequired = new ArrayList<>();
+        this.isSaved = false;
     }
 
 }

@@ -3,11 +3,13 @@ package com.ssds.skillconnect.service;
 import com.ssds.skillconnect.config.JwtService;
 import com.ssds.skillconnect.dao.Post;
 import com.ssds.skillconnect.dao.Project;
+import com.ssds.skillconnect.dao.Skill;
 import com.ssds.skillconnect.dao.User;
 import com.ssds.skillconnect.model.PostCreateRequestModel;
 import com.ssds.skillconnect.model.PostRowResponseModel;
 import com.ssds.skillconnect.repository.PostRepository;
 import com.ssds.skillconnect.repository.ProjectRepository;
+import com.ssds.skillconnect.repository.SkillRepository;
 import com.ssds.skillconnect.repository.UserRepository;
 import com.ssds.skillconnect.utils.exception.ApiRequestException;
 import lombok.RequiredArgsConstructor;
@@ -15,8 +17,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -27,34 +31,13 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
+    private final SkillRepository skillRepository;
     private final JwtService jwtService;
 
     final Integer Descending = 0;
     final Integer Ascending = 1;
 
     private Logger logger = Logger.getLogger(this.getClass().getName());
-
-    public List<Post> getAllPosts( String authorizationHeader ) {
-        try {
-            List<Post> allPosts = postRepository.findAll();
-
-            String jwtToken = authorizationHeader.substring(7);
-            String userEmail = jwtService.extractUserEmail(jwtToken);
-            User currentUser = userRepository.findByEmail(userEmail)
-                    .orElseThrow(() -> new ApiRequestException("User not found", HttpStatus.NOT_FOUND));
-
-            for(Post post : allPosts) {
-                if(!Objects.equals(post.getUser().getUserId(), currentUser.getUserId())) {
-                    // If the post is not created by the current user, then remove the list of applicants
-                    //post.setListOfApplicants(null);
-                }
-            }
-
-            return allPosts;
-        } catch (Exception e) {
-            throw new ApiRequestException(e.getMessage());
-        }
-    }
 
     public List<PostRowResponseModel> getAllPosts(
             String authorizationHeader,
@@ -68,20 +51,13 @@ public class PostService {
             List<PostRowResponseModel> allPosts;
             if(departmentId != null || priority != null || skill != null || sort != null) {
 
+                skill = (skill!=null && skill.equals("")) ? null : skill;
                 sort = (sort == null) ? Descending: sort;
 
-                List<PostRowResponseModel> filteredPostList =
-                        (sort.equals(Descending)) ?
-                        postRepository.findByDepartmentIdAndPriorityDESCRowResponseModel(departmentId, priority)
-                        :
-                        postRepository.findByDepartmentIdAndPriorityASCRowResponseModel(departmentId, priority);
-
-                if(skill != null) {
-                    filteredPostList = filteredPostList.stream()
-                            .filter(post -> post.getListOfSkillsRequired().stream().map(String::toLowerCase).toList().contains(skill.toLowerCase()))
-                            .collect(Collectors.toList());
-                }
-                allPosts = filteredPostList;
+                allPosts = (sort.equals(Descending)) ?
+                postRepository.findByDepartmentIdAndPriorityDESCRowResponseModelAndSkill(departmentId, priority, skill)
+                :
+                postRepository.findByDepartmentIdAndPriorityASCRowResponseModelAndSkill(departmentId, priority, skill);
             } else {
                 allPosts = postRepository.findAllPostsRowResponseModel();
             }
@@ -95,8 +71,10 @@ public class PostService {
 
             for(PostRowResponseModel post : allPosts) {
                 post.setIsSaved(savedPostIds.contains(post.getPostId()));
+                post.setListOfSkillsRequired(postRepository.findSkillsByPostId(post.getPostId()));
             }
-            
+
+
             return allPosts;
 
         } catch (Exception e) {
@@ -134,7 +112,21 @@ public class PostService {
             newPost.setCreatedOn(postCreateRequestModel.getCreatedOn());
             newPost.setIsOpen(postCreateRequestModel.getIsOpen());
             newPost.setTotalApplicants(postCreateRequestModel.getTotalApplicants());
-            newPost.setListOfSkillsRequired(postCreateRequestModel.getListOfSkillsRequired());
+
+            List<Skill> listOfSkills = new ArrayList<>();
+
+            postCreateRequestModel.getListOfSkillStringsRequired().forEach(skillName -> {
+                Optional<Skill> skill = skillRepository.findBySkillName(skillName);
+                if(skill.isPresent()) {
+                    listOfSkills.add(skill.get());
+                } else {
+                    Skill newSkill = new Skill();
+                    newSkill.setSkillName(skillName);
+                    listOfSkills.add(skillRepository.save(newSkill));
+                }
+            });
+
+            newPost.setListOfSkillsRequired(listOfSkills);
 
             newPost.setUser(currentUser);
             newPost.setProject(currentProject);
