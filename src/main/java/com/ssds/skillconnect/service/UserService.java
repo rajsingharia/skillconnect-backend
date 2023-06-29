@@ -8,10 +8,7 @@ import com.ssds.skillconnect.dao.User;
 import com.ssds.skillconnect.model.UserDetailResponseModel;
 import com.ssds.skillconnect.model.UserModel;
 import com.ssds.skillconnect.model.UserSearchResponseModel;
-import com.ssds.skillconnect.repository.DepartmentRepository;
-import com.ssds.skillconnect.repository.PostRepository;
-import com.ssds.skillconnect.repository.SkillRepository;
-import com.ssds.skillconnect.repository.UserRepository;
+import com.ssds.skillconnect.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,6 +26,7 @@ public class UserService {
     private final DepartmentRepository departmentRepository;
     private final PostRepository postRepository;
     private final SkillRepository skillRepository;
+    private final ProjectRepository projectRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
@@ -240,4 +238,5 @@ public class UserService {
             throw new RuntimeException(e.getMessage());
         }
     }
+
 }

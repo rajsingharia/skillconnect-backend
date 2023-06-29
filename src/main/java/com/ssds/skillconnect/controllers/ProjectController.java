@@ -1,7 +1,9 @@
 package com.ssds.skillconnect.controllers;
 
 import com.ssds.skillconnect.dao.Task;
+import com.ssds.skillconnect.model.ProjectRowResponseModel;
 import com.ssds.skillconnect.model.TaskRequestModel;
+import com.ssds.skillconnect.model.UserDetailResponseModel;
 import com.ssds.skillconnect.service.ProjectService;
 import com.ssds.skillconnect.dao.Project;
 import com.ssds.skillconnect.model.ProjectModel;
@@ -23,8 +25,14 @@ public class ProjectController {
     private static final Logger logger = Logger.getLogger(ProjectController.class.getName());
 
     @GetMapping("/all")
-    private List<Project> getAllProjects() {
+    private List<ProjectRowResponseModel> getAllProjects() {
         return projectService.getAllProjects();
+    }
+
+    @GetMapping("/user")
+    private List<ProjectRowResponseModel> getProjectByUser(
+            @RequestHeader(value="Authorization") String authorizationHeader) {
+        return projectService.getProjectByUser(authorizationHeader);
     }
 
     @GetMapping("/all-open")
@@ -65,10 +73,12 @@ public class ProjectController {
         return projectService.removeUserFromProject(projectId, userId);
     }
 
-    @GetMapping("/user")
-    private List<Project> getProjectByUser(
-            @RequestHeader(value="Authorization") String authorizationHeader) {
-        return projectService.getProjectByUser(authorizationHeader);
+    @GetMapping("/all-users")
+    private List<UserDetailResponseModel> getAllUsersInProject(
+            @RequestHeader(value="Authorization") String authorizationHeader,
+            @RequestParam Integer projectId
+    ) {
+        return projectService.getAllUsersInProject(authorizationHeader, projectId);
     }
 
 }

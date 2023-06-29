@@ -70,4 +70,17 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     @Query("SELECT u.listOfSkills FROM User u WHERE u.userId = :userId")
     List<Skill> findListOfSkillsByUserId(@Param("userId") Integer userId);
 
+    @Query("SELECT new com.ssds.skillconnect.model.UserDetailResponseModel( " +
+            "u.userId, " +
+            "u.name, " +
+            "u.email, " +
+            "u.department.departmentName, " +
+            "u.experience ) " +
+            "FROM User u " +
+            "WHERE u.userId IN (SELECT uAPL.userId FROM Project p JOIN p.usersAssignedProjectList uAPL WHERE p.projectId = :projectId) " +
+            "AND u.userId != :userId")
+    List<UserDetailResponseModel> findAllUserResponseModelInProject(
+            @Param("userId") Integer userId,
+            @Param("projectId") Integer projectId
+    );
 }

@@ -4,7 +4,10 @@ import com.ssds.skillconnect.config.JwtService;
 import com.ssds.skillconnect.dao.Department;
 import com.ssds.skillconnect.dao.Project;
 import com.ssds.skillconnect.dao.User;
+import com.ssds.skillconnect.model.CountOfTaskTypesModel;
 import com.ssds.skillconnect.model.ProjectModel;
+import com.ssds.skillconnect.model.ProjectRowResponseModel;
+import com.ssds.skillconnect.model.UserDetailResponseModel;
 import com.ssds.skillconnect.repository.DepartmentRepository;
 import com.ssds.skillconnect.repository.ProjectRepository;
 import com.ssds.skillconnect.repository.TaskRepository;
@@ -13,6 +16,7 @@ import com.ssds.skillconnect.utils.exception.ApiRequestException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -24,13 +28,57 @@ public class ProjectService {
     private final TaskRepository taskRepository;
     private final JwtService jwtService;
 
-    public List<Project> getAllProjects() {
+    public List<ProjectRowResponseModel> getAllProjects() {
         try {
-            return projectRepo.findAll();
+            List<ProjectRowResponseModel> projectRowResponseModelList = projectRepo.findAllProjectRowResponseModels();
+
+            projectRowResponseModelList.forEach(projectRowResponseModel -> {
+                Integer projectId = projectRowResponseModel.getProjectId();
+                CountOfTaskTypesModel countOfTaskTypesModel = taskRepository.findCountOfTaskTypesModelInProjectId(projectId);
+                projectRowResponseModel.setCountOfTaskTypes(countOfTaskTypesModel);
+                projectRowResponseModel.setIsCreator(false);
+            });
+
+            return projectRowResponseModelList;
+
         } catch (Exception e) {
             throw new ApiRequestException(e.getMessage());
         }
     }
+
+    public List<ProjectRowResponseModel> getProjectByUser(String authorizationHeader) {
+        try {
+            String jwtToken = authorizationHeader.substring(7);
+            String userEmail = jwtService.extractUserEmail(jwtToken);
+
+            User user = userRepository.findByEmail(userEmail)
+                    .orElseThrow(() -> new ApiRequestException("User not found"));
+
+            Integer userId = user.getUserId();
+
+            List<ProjectRowResponseModel> projectRowResponseModelList = projectRepo.findByPersonsAssignedProjectList(userId);
+
+            projectRowResponseModelList.forEach(projectRowResponseModel -> {
+                Integer projectId = projectRowResponseModel.getProjectId();
+                CountOfTaskTypesModel countOfTaskTypesModel = taskRepository.findCountOfTaskTypesModelInProjectId(projectId);
+                projectRowResponseModel.setCountOfTaskTypes(countOfTaskTypesModel);
+
+                Project currentProject = projectRepo.findById(projectId)
+                        .orElseThrow(() -> new ApiRequestException("Project not found"));
+
+                projectRowResponseModel.setIsCreator(
+                        Objects.equals(currentProject.getProjectCreator().getUserId(), userId)
+                );
+
+            });
+
+            return projectRowResponseModelList;
+
+        } catch (Exception e) {
+            throw new ApiRequestException(e.getMessage());
+        }
+    }
+
 
     public Project createProject(ProjectModel projectModel, String authorizationHeader) {
         try {
@@ -131,27 +179,6 @@ public class ProjectService {
         }
     }
 
-    public List<Project> getProjectByUser(String authorizationHeader) {
-        try {
-            String jwtToken = authorizationHeader.substring(7);
-            String userEmail = jwtService.extractUserEmail(jwtToken);
-
-            User user = userRepository.findByEmail(userEmail)
-                    .orElseThrow(() -> new ApiRequestException("User not found"));
-
-            Integer userId = user.getUserId();
-
-            List<Project> projects = projectRepo.findByPersonsAssignedProjectList(userId);
-            if (projects == null) {
-                throw new ApiRequestException("No projects found");
-            }
-            return projects;
-
-        } catch (Exception e) {
-            throw new ApiRequestException(e.getMessage());
-        }
-    }
-
     public List<Project> getAllOpenProjects() {
         try {
             List<Project> projects = projectRepo.findAllOpenProjects();
@@ -165,6 +192,30 @@ public class ProjectService {
         }
     }
 
+    public List<UserDetailResponseModel> getAllUsersInProject(String authorizationHeader, Integer projectId) {
+        try {
+
+            String jwtToken = authorizationHeader.substring(7);
+            String userEmail = jwtService.extractUserEmail(jwtToken);
+
+            User user = userRepository.findByEmail(userEmail)
+                    .orElseThrow(() -> new ApiRequestException("User not found"));
+
+            Integer userId = user.getUserId();
+
+            Project currentProject = projectRepo.findById(projectId)
+                    .orElseThrow(() -> new ApiRequestException("Project not found"));
+
+            if(!Objects.equals(currentProject.getProjectCreator().getUserId(), userId)){
+                throw new ApiRequestException("Only project creator can view users in project");
+            }
+
+            return userRepository.findAllUserResponseModelInProject(userId, projectId);
+
+        } catch (Exception e) {
+            throw new ApiRequestException(e.getMessage());
+        }
+    }
 }
 
 

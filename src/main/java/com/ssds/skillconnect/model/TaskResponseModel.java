@@ -12,6 +12,8 @@ import java.sql.Timestamp;
 public class TaskResponseModel {
     private Integer taskId;
     private String taskTitle;
+    private Integer taskAssignedUserId;
+    private String taskAssignedUserName;
     private String taskDescription;
     private TaskStatus taskStatus;
     private Timestamp taskCreatedOn;

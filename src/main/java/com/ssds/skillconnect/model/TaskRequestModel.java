@@ -15,6 +15,7 @@ import java.sql.Timestamp;
 public class TaskRequestModel {
     private String taskTitle;
     private String taskDescription;
+    private Integer taskAssignedUserId;
     private String taskStatus = TaskStatus.PENDING.toString();
     private Timestamp taskCreatedOn = new Timestamp(System.currentTimeMillis());
 }

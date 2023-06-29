@@ -20,7 +20,7 @@ public class SkillController {
         return skillService.getAllSkills();
     }
 
-    @GetMapping("/search/{skillName}")
+    @GetMapping("/search/{skillName}") //skillName can be empty
     List<Skill> findSimilarSkills(@PathVariable String skillName) {
         return skillService.findSimilarSkills(skillName);
     }

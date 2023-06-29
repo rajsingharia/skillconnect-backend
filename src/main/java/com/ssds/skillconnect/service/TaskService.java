@@ -66,6 +66,11 @@ public class TaskService {
             task.setTaskStatus(TaskStatus.valueOf(taskRequestModel.getTaskStatus()));
             task.setTaskCreatedOn(taskRequestModel.getTaskCreatedOn());
 
+            User taskAssignedUser = userRepository.findById(taskRequestModel.getTaskAssignedUserId())
+                    .orElseThrow(() -> new ApiRequestException("Assigned User not found"));
+
+            task.setTaskAssignedUser(taskAssignedUser);
+
             task.setProject(project);
 
             taskRepository.save(task);
