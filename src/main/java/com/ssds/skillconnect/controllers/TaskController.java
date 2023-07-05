@@ -1,10 +1,10 @@
 package com.ssds.skillconnect.controllers;
 
-import com.ssds.skillconnect.dao.Task;
-import com.ssds.skillconnect.model.TaskRequestModel;
+import com.ssds.skillconnect.model.TaskCreateRequestModel;
 import com.ssds.skillconnect.model.TaskResponseModel;
 import com.ssds.skillconnect.service.TaskService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,29 +20,33 @@ public class TaskController {
     private final Logger logger = Logger.getLogger(TaskController.class.getName());
 
     @GetMapping("/all")
-    private List<TaskResponseModel> getAllTasks() {
-        return taskService.getAllTasks();
+    private ResponseEntity<List<TaskResponseModel>> getAllTasks() {
+        List<TaskResponseModel> allTasks = taskService.getAllTasks();
+        return ResponseEntity.ok(allTasks);
     }
 
     @GetMapping("/all/{projectId}")
-    private List<TaskResponseModel> getAllTasksByProjectId( @PathVariable Integer projectId ) {
-        return taskService.getAllTasksByProjectId(projectId);
+    private ResponseEntity<List<TaskResponseModel>> getAllTasksByProjectId( @PathVariable Integer projectId ) {
+        List<TaskResponseModel> allTasksByProjectId = taskService.getAllTasksByProjectId(projectId);
+        return ResponseEntity.ok(allTasksByProjectId);
     }
 
     @PostMapping("/{projectId}/add-new-task")
-    private void addNewTask(
+    private ResponseEntity<TaskResponseModel> addNewTask(
             @PathVariable Integer projectId,
-            @RequestBody TaskRequestModel taskRequestModel,
+            @RequestBody TaskCreateRequestModel taskCreateRequestModel,
             @RequestHeader(value="Authorization") String authorizationHeader) {
-        taskService.addNewTask(projectId, taskRequestModel, authorizationHeader);
+        TaskResponseModel taskResponseModel = taskService.addNewTask(projectId, taskCreateRequestModel, authorizationHeader);
+        return ResponseEntity.ok(taskResponseModel);
     }
 
     @PostMapping("/{taskId}/update-status/{status}")
-    private void updateTaskStatus(
+    private ResponseEntity<TaskResponseModel> updateTaskStatus(
             @PathVariable Integer taskId,
             @PathVariable String status,
             @RequestHeader(value="Authorization") String authorizationHeader) {
-        taskService.updateTaskStatus(taskId, status, authorizationHeader);
+        TaskResponseModel taskResponseModel = taskService.updateTaskStatus(taskId, status, authorizationHeader);
+        return ResponseEntity.ok(taskResponseModel);
     }
 
 }

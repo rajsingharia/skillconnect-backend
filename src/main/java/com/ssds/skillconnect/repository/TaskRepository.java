@@ -11,28 +11,8 @@ import java.util.List;
 
 public interface TaskRepository extends JpaRepository<Task, Integer> {
 
-    @Query("SELECT new com.ssds.skillconnect.model.TaskResponseModel(" +
-            "t.taskId, " +
-            "t.taskTitle, " +
-            "t.taskAssignedUser.userId, " +
-            "t.taskAssignedUser.name, " +
-            "t.taskDescription, " +
-            "t.taskStatus, " +
-            "t.taskCreatedOn) " +
-            "FROM Task t")
-    List<TaskResponseModel> findAllTaskResponseModel();
-
-    @Query("SELECT new com.ssds.skillconnect.model.TaskResponseModel(" +
-            "t.taskId, " +
-            "t.taskTitle, " +
-            "t.taskAssignedUser.userId, " +
-            "t.taskAssignedUser.name, " +
-            "t.taskDescription, " +
-            "t.taskStatus, " +
-            "t.taskCreatedOn) " +
-            "FROM Task t " +
-            "WHERE t.project.projectId = :projectId")
-    List<TaskResponseModel> findAllTaskResponseModelByProjectId(@Param("projectId") Integer projectId);
+    @Query("SELECT t FROM Task t WHERE t.project.projectId = :projectId")
+    List<Task> findAllTaskByProjectId(@Param("projectId") Integer projectId);
 
     @Query("SELECT new com.ssds.skillconnect.model.CountOfTaskTypesModel(" +
             "COUNT(t.taskId), " +

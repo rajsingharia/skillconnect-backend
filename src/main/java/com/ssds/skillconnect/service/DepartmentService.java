@@ -15,7 +15,6 @@ public class DepartmentService {
 
     private final DepartmentRepository departmentRepository;
 
-
     public List<Department> getAllDepartments() {
         try {
             return departmentRepository.findAll();

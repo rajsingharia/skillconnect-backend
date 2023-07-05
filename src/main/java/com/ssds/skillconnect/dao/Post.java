@@ -3,6 +3,7 @@ package com.ssds.skillconnect.dao;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.ssds.skillconnect.model.PostResponseModel;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -81,5 +82,4 @@ public class Post {
     private Boolean isOpen;
 
     private Timestamp createdOn;
-
 }

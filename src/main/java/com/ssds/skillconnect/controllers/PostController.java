@@ -1,12 +1,16 @@
 package com.ssds.skillconnect.controllers;
 
+import com.ssds.skillconnect.model.PostResponseModel;
 import com.ssds.skillconnect.model.PostRowResponseModel;
+import com.ssds.skillconnect.model.UserDetailResponseModel;
 import com.ssds.skillconnect.service.PostService;
 import com.ssds.skillconnect.dao.Post;
 import com.ssds.skillconnect.dao.User;
 import com.ssds.skillconnect.model.PostCreateRequestModel;
 import com.ssds.skillconnect.utils.exception.ApiRequestException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -20,57 +24,71 @@ public class PostController {
 
     @GetMapping("/all")
     @ResponseBody
-    public List<PostRowResponseModel> getAllPosts(
+    public ResponseEntity<List<PostRowResponseModel>> getAllPosts(
             @RequestHeader(value="Authorization") String authorizationHeader,
             @RequestParam(required = false) Integer departmentId,
             @RequestParam(required = false) Integer priority,
             @RequestParam(required = false) String skill,
-            @RequestParam(required = false) Integer sort
+            @RequestParam(required = false) Integer sort,
+            @RequestParam(value = "pageNumber", defaultValue = "0") Integer pageNumber,
+            @RequestParam(value = "pageSize", defaultValue = "3") Integer pageSize
     ) {
-        //throw new ApiRequestException("This is a test exception");
-        return postService.getAllPosts(authorizationHeader, departmentId, priority, skill, sort);
+        List<PostRowResponseModel> postList = postService.getAllPosts(
+                authorizationHeader,
+                departmentId,
+                priority,
+                skill,
+                sort,
+                pageNumber,
+                pageSize);
+        return ResponseEntity.ok(postList);
     }
 
 
 
     @PostMapping("/create")
     @ResponseBody
-    public Post createPost(
+    public ResponseEntity<PostResponseModel> createPost(
             @RequestBody PostCreateRequestModel postCreateRequestModel,
             @RequestHeader(value="Authorization") String authorizationHeader
     ) {
-        return postService.createPost(postCreateRequestModel, authorizationHeader);
+        PostResponseModel post = postService.createPost(postCreateRequestModel, authorizationHeader);
+        return new ResponseEntity<>(post, HttpStatus.CREATED);
     }
 
     @GetMapping("/{postId}")
     @ResponseBody
-    public Post getPostById(
+    public ResponseEntity<PostResponseModel> getPostById(
             @PathVariable Integer postId,
             @RequestHeader(value="Authorization") String authorizationHeader
     ) {
-        return postService.getPostById(postId, authorizationHeader);
+        PostResponseModel postById = postService.getPostById(postId, authorizationHeader);
+        return ResponseEntity.ok(postById);
     }
 
     @GetMapping("{postId}/applicants")
-    public List<User> getAllApplicantsToPost(@PathVariable Integer postId) {
-        return postService.getAllApplicantsToPost(postId);
+    public ResponseEntity<List<UserDetailResponseModel>> getAllApplicantsToPost(@PathVariable Integer postId) {
+        List<UserDetailResponseModel> allApplicantsToPost = postService.getAllApplicantsToPost(postId);
+        return ResponseEntity.ok(allApplicantsToPost);
     }
 
     @PostMapping("{postId}/apply")
-    public Post applyToPost(
+    public ResponseEntity<PostResponseModel> applyToPost(
             @PathVariable Integer postId,
             @RequestHeader(value="Authorization") String authorizationHeader
     ) {
-        return postService.applyToPost(postId, authorizationHeader);
+        PostResponseModel postResponseModel = postService.applyToPost(postId, authorizationHeader);
+        return ResponseEntity.ok(postResponseModel);
     }
 
     @PostMapping("{postId}/approve/{userId}")
-    public Post approveTheUser(
+    public ResponseEntity<PostResponseModel> approveTheUser(
             @PathVariable Integer postId,
             @PathVariable Integer userId,
             @RequestHeader(value="Authorization") String authorizationHeader
     ) {
-        return postService.approveTheUser(postId, userId, authorizationHeader);
+        PostResponseModel postResponseModel = postService.approveTheUser(postId, userId, authorizationHeader);
+        return new ResponseEntity<>(postResponseModel, HttpStatus.ACCEPTED);
     }
 
 }

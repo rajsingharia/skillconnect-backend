@@ -5,10 +5,13 @@ import com.ssds.skillconnect.dao.Department;
 import com.ssds.skillconnect.dao.Post;
 import com.ssds.skillconnect.dao.Skill;
 import com.ssds.skillconnect.dao.User;
+import com.ssds.skillconnect.model.PostResponseModel;
 import com.ssds.skillconnect.model.UserDetailResponseModel;
 import com.ssds.skillconnect.model.UserModel;
 import com.ssds.skillconnect.model.UserSearchResponseModel;
 import com.ssds.skillconnect.repository.*;
+import com.ssds.skillconnect.utils.exception.ApiRequestException;
+import com.ssds.skillconnect.utils.helper.Mapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,18 +32,17 @@ public class UserService {
     private final ProjectRepository projectRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final Mapper mapper;
 
     public UserDetailResponseModel getUser(String authorizationHeader) {
         try {
             String jwtToken = authorizationHeader.substring(7);
             String userEmail = jwtService.extractUserEmail(jwtToken);
 
-            UserDetailResponseModel userDetailResponseModel = userRepository.findUserDetailResponseModelByEmail(userEmail)
+            User user = userRepository.findByEmail(userEmail)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            userDetailResponseModel.setListOfSkills(userRepository.findListOfSkillsByUserId(userDetailResponseModel.getUserId()));
-
-            return userDetailResponseModel;
+            return mapper.User_to_UserDetailResponseModel(user);
 
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
@@ -83,12 +85,10 @@ public class UserService {
         try {
             userRepository.save(userToUpdate);
 
-            UserDetailResponseModel userDetailResponseModel = userRepository.findUserDetailResponseModelByEmail(userEmail)
+            User user = userRepository.findByEmail(userEmail)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            userDetailResponseModel.setListOfSkills(userRepository.findListOfSkillsByUserId(userDetailResponseModel.getUserId()));
-
-            return userDetailResponseModel;
+            return mapper.User_to_UserDetailResponseModel(user);
 
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
@@ -97,14 +97,12 @@ public class UserService {
 
     public List<UserDetailResponseModel> getAllUsersByDepartmentId(Integer departmentId) {
         try {
-            List<UserDetailResponseModel> userDetailResponseModelList = userRepository.findUserDetailResponseModelByDepartmentId(departmentId)
+            List<User> userList = userRepository.findUserByDepartmentId(departmentId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            for (UserDetailResponseModel userDetailResponseModel : userDetailResponseModelList) {
-                userDetailResponseModel.setListOfSkills(userRepository.findListOfSkillsByUserId(userDetailResponseModel.getUserId()));
-            }
-
-            return userDetailResponseModelList;
+            return userList.stream().map(
+                    mapper::User_to_UserDetailResponseModel
+            ).toList();
 
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
@@ -121,7 +119,6 @@ public class UserService {
 
             return userRepository.findSavedPostsIdByUserId(user.getUserId())
                     .orElseThrow(() -> new RuntimeException("Saved posts not found"));
-//            return user.getSavedPostsId();
 
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
@@ -194,7 +191,7 @@ public class UserService {
         }
     }
 
-    public List<Post> getAllSavedPosts(String authorizationHeader) {
+    public List<PostResponseModel> getAllSavedPosts(String authorizationHeader) {
         try {
             String jwtToken = authorizationHeader.substring(7);
             String userEmail = jwtService.extractUserEmail(jwtToken);
@@ -202,11 +199,12 @@ public class UserService {
             User user = userRepository.findByEmail(userEmail)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            return userRepository.findSavedPostsByUserId(user.getUserId())
+            List<Post>listOfPosts = userRepository.findSavedPostsByUserId(user.getUserId())
                     .orElseThrow(() -> new RuntimeException("Saved posts not found"));
 
-//            List<Integer> userSavedPostsIds = userRepository.getSavedPostsId();
-//            return postRepository.findAllById(userSavedPostsIds);
+            return listOfPosts.stream().map(
+                    mapper::Post_to_PostResponseModel
+            ).toList();
 
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
@@ -216,13 +214,9 @@ public class UserService {
     public UserDetailResponseModel getUserById(Integer userId) {
         try {
 
-            return userRepository.findUserDetailResponseModelByUserId(userId)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-            // For security reasons, we don't want to send the password and savedPostsId to the client
-            // if the user is fetching someone else's profile (i.e. not his own)
-            //user.setSavedPostsId(null);
-//            user.setPassword(null);
-//            return user;
+            User user = userRepository.findById(userId).orElseThrow(() -> new ApiRequestException("User not found"));
+
+            return mapper.User_to_UserDetailResponseModel(user);
 
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage());

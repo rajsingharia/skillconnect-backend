@@ -1,14 +1,13 @@
 package com.ssds.skillconnect.controllers;
 
-import com.ssds.skillconnect.dao.Task;
+import com.ssds.skillconnect.model.ProjectResponseModel;
 import com.ssds.skillconnect.model.ProjectRowResponseModel;
-import com.ssds.skillconnect.model.TaskRequestModel;
 import com.ssds.skillconnect.model.UserDetailResponseModel;
 import com.ssds.skillconnect.service.ProjectService;
-import com.ssds.skillconnect.dao.Project;
-import com.ssds.skillconnect.model.ProjectModel;
+import com.ssds.skillconnect.model.ProjectCreateRequestModel;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Controller;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.logging.Logger;
@@ -25,60 +24,83 @@ public class ProjectController {
     private static final Logger logger = Logger.getLogger(ProjectController.class.getName());
 
     @GetMapping("/all")
-    private List<ProjectRowResponseModel> getAllProjects() {
-        return projectService.getAllProjects();
+    private ResponseEntity<List<ProjectRowResponseModel>> getAllProjects(
+            @RequestHeader(value="Authorization") String authorizationHeader,
+            @RequestParam(value = "pageNumber", defaultValue = "0") Integer pageNumber,
+            @RequestParam(value = "pageSize", defaultValue = "3") Integer pageSize
+    ) {
+        List<ProjectRowResponseModel> allProjects = projectService.getAllProjects(
+                authorizationHeader,
+                pageNumber,
+                pageSize
+        );
+        return ResponseEntity.ok(allProjects);
     }
 
     @GetMapping("/user")
-    private List<ProjectRowResponseModel> getProjectByUser(
-            @RequestHeader(value="Authorization") String authorizationHeader) {
-        return projectService.getProjectByUser(authorizationHeader);
+    private ResponseEntity<List<ProjectRowResponseModel>> getProjectByUser(
+            @RequestHeader(value="Authorization") String authorizationHeader,
+            @RequestParam(value = "pageNumber", defaultValue = "0") Integer pageNumber,
+            @RequestParam(value = "pageSize", defaultValue = "3") Integer pageSize) {
+
+        logger.log(INFO, "pageNumber: " + pageNumber);
+
+        List<ProjectRowResponseModel> allProjects = projectService.getProjectByUser(
+                authorizationHeader,
+                pageNumber,
+                pageSize);
+        return ResponseEntity.ok(allProjects);
     }
 
     @GetMapping("/all-open")
-    private List<Project> getAllOpenProjects() {
-        return projectService.getAllOpenProjects();
+    private ResponseEntity<List<ProjectResponseModel>> getAllOpenProjects() {
+        List<ProjectResponseModel> allOpenProjects = projectService.getAllOpenProjects();
+        return ResponseEntity.ok(allOpenProjects);
     }
 
     @PostMapping("/create")
-    private Project createProject(
-            @RequestBody ProjectModel projectModel,
+    private ResponseEntity<ProjectResponseModel> createProject(
+            @RequestBody ProjectCreateRequestModel projectCreateRequestModel,
             @RequestHeader(value="Authorization") String authorizationHeader
     ) {
-        logger.log(INFO, projectModel.toString());
-        return projectService.createProject(projectModel, authorizationHeader);
+        ProjectResponseModel project = projectService.createProject(projectCreateRequestModel, authorizationHeader);
+        return new ResponseEntity<>(project, HttpStatus.CREATED);
     }
 
     @GetMapping("/{projectId}")
-    private Project getProjectById(@PathVariable Integer projectId) {
-        return projectService.getProjectById(projectId);
+    private ResponseEntity<ProjectResponseModel> getProjectById(@PathVariable Integer projectId) {
+        ProjectResponseModel projectById = projectService.getProjectById(projectId);
+        return ResponseEntity.ok(projectById);
     }
 
     @PostMapping("/{projectId}/add-user/{userId}")
-    private Project addUserToProject(
+    private ResponseEntity<ProjectResponseModel> addUserToProject(
             @PathVariable Integer projectId,
             @PathVariable Integer userId,
             @RequestHeader(value="Authorization") String authorizationHeader) {
-        return projectService.addUserToProject(
+        ProjectResponseModel projectResponseModel = projectService.addUserToProject(
                 projectId,
                 userId,
                 authorizationHeader
         );
+        return ResponseEntity.ok(projectResponseModel);
     }
 
     @DeleteMapping("/{projectId}/remove-user/{userId}")
-    private Project removeUserFromProject(
+    private ResponseEntity<ProjectResponseModel> removeUserFromProject(
             @PathVariable Integer projectId,
             @PathVariable Integer userId) {
-        return projectService.removeUserFromProject(projectId, userId);
+        ProjectResponseModel projectResponseModel = projectService.removeUserFromProject(projectId, userId);
+        return ResponseEntity.ok(projectResponseModel);
     }
 
     @GetMapping("/all-users")
-    private List<UserDetailResponseModel> getAllUsersInProject(
+    private ResponseEntity<List<UserDetailResponseModel>> getAllUsersInProject(
             @RequestHeader(value="Authorization") String authorizationHeader,
             @RequestParam Integer projectId
     ) {
-        return projectService.getAllUsersInProject(authorizationHeader, projectId);
+        List<UserDetailResponseModel> allUsersInProject = projectService.getAllUsersInProject(authorizationHeader, projectId);
+        return ResponseEntity.ok(allUsersInProject);
     }
 
 }

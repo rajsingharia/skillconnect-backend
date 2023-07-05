@@ -1,12 +1,15 @@
 package com.ssds.skillconnect.controllers;
 
 import com.ssds.skillconnect.dao.Post;
+import com.ssds.skillconnect.model.PostResponseModel;
 import com.ssds.skillconnect.model.UserDetailResponseModel;
 import com.ssds.skillconnect.model.UserModel;
 import com.ssds.skillconnect.model.UserSearchResponseModel;
 import com.ssds.skillconnect.service.UserService;
 import com.ssds.skillconnect.dao.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,72 +26,79 @@ public class UserController {
     private static final Logger logger = Logger.getLogger(UserController.class.getName());
 
     @GetMapping("/get")
-    private UserDetailResponseModel getUserById(
+    private ResponseEntity<UserDetailResponseModel> getUserById(
             @RequestHeader(value="Authorization") String authorizationHeader
     ) {
-        return userService.getUser(authorizationHeader);
+        UserDetailResponseModel user = userService.getUser(authorizationHeader);
+        return ResponseEntity.ok(user);
     }
 
     @GetMapping("/get/{userId}")
-    private UserDetailResponseModel getUserById(
+    private ResponseEntity<UserDetailResponseModel> getUserById(
             @PathVariable Integer userId
     ) {
-        return userService.getUserById(userId);
+        UserDetailResponseModel userById = userService.getUserById(userId);
+        return ResponseEntity.ok(userById);
     }
 
     @GetMapping("/search/{projectId}/{name}")
-    private List<UserSearchResponseModel> getAllUsersLike(
+    private ResponseEntity<List<UserSearchResponseModel>> getAllUsersLike(
             @PathVariable Integer projectId,
             @PathVariable String name
     ) {
-        return userService.getAllUsersLike(projectId, name);
+        List<UserSearchResponseModel> allUsersLike = userService.getAllUsersLike(projectId, name);
+        return ResponseEntity.ok(allUsersLike);
     }
 
     @PutMapping("/update")
-    private UserDetailResponseModel updateUserById(
+    private ResponseEntity<UserDetailResponseModel> updateUserById(
             @RequestHeader(value="Authorization") String authorizationHeader,
             @RequestBody UserModel userModel
     ) {
-        return userService.updateUserById(authorizationHeader, userModel);
+        UserDetailResponseModel userDetailResponseModel = userService.updateUserById(authorizationHeader, userModel);
+        return new ResponseEntity<>(userDetailResponseModel, HttpStatus.CREATED);
     }
 
     @GetMapping("/get-all-saved-posts")
-    private List<Integer> getAllSavedPosts(
+    private ResponseEntity<List<Integer>> getAllSavedPosts(
             @RequestHeader(value="Authorization") String authorizationHeader
     ) {
-        return userService.getAllSavedPostsId(authorizationHeader);
+        List<Integer> allSavedPostsId = userService.getAllSavedPostsId(authorizationHeader);
+        return ResponseEntity.ok(allSavedPostsId);
     }
 
     @GetMapping("/get-all-saved-posts-details")
-    private List<Post> getAllSavedPostsDetails(
+    private ResponseEntity<List<PostResponseModel>> getAllSavedPostsDetails(
             @RequestHeader(value="Authorization") String authorizationHeader
     ) {
-        return userService.getAllSavedPosts(authorizationHeader);
+        List<PostResponseModel> allSavedPosts = userService.getAllSavedPosts(authorizationHeader);
+        return ResponseEntity.ok(allSavedPosts);
     }
 
     @GetMapping("/save-post/{postId}")
-    private List<Integer> savePost(
+    private ResponseEntity<List<Integer>> savePost(
             @RequestHeader(value="Authorization") String authorizationHeader,
             @PathVariable Integer postId
     ) {
-        logger.log(Level.INFO, "Saving post" + postId);
-        return userService.savePost(authorizationHeader, postId);
+        List<Integer> integers = userService.savePost(authorizationHeader, postId);
+        return ResponseEntity.ok(integers);
     }
 
     @GetMapping("/un-save-post/{postId}")
-    private List<Integer> unSavePost(
+    private ResponseEntity<List<Integer>> unSavePost(
             @RequestHeader(value="Authorization") String authorizationHeader,
             @PathVariable Integer postId
     ) {
-        return userService.unSavePost(authorizationHeader, postId);
+        List<Integer> integers = userService.unSavePost(authorizationHeader, postId);
+        return ResponseEntity.ok(integers);
     }
 
     @GetMapping("get-all-users/{departmentId}")
-    private List<UserDetailResponseModel> getAllUsersByDepartmentId(
+    private ResponseEntity<List<UserDetailResponseModel>> getAllUsersByDepartmentId(
             @PathVariable Integer departmentId
     ) {
-        logger.log(Level.INFO, "Getting all users by department id");
-        return userService.getAllUsersByDepartmentId(departmentId);
+        List<UserDetailResponseModel> allUsersByDepartmentId = userService.getAllUsersByDepartmentId(departmentId);
+        return ResponseEntity.ok(allUsersByDepartmentId);
     }
 
 }

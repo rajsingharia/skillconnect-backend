@@ -3,6 +3,7 @@ package com.ssds.skillconnect.controllers;
 import com.ssds.skillconnect.dao.Skill;
 import com.ssds.skillconnect.service.SkillService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,13 +17,15 @@ public class SkillController {
     private final SkillService skillService;
 
     @GetMapping("/all")
-    List<Skill> getAllSkills() {
-        return skillService.getAllSkills();
+    ResponseEntity<List<Skill>> getAllSkills() {
+        List<Skill> allSkills = skillService.getAllSkills();
+        return ResponseEntity.ok(allSkills);
     }
 
     @GetMapping("/search/{skillName}") //skillName can be empty
-    List<Skill> findSimilarSkills(@PathVariable String skillName) {
-        return skillService.findSimilarSkills(skillName);
+    ResponseEntity<List<Skill>> findSimilarSkills(@PathVariable String skillName) {
+        List<Skill> similarSkills = skillService.findSimilarSkills(skillName);
+        return ResponseEntity.ok(similarSkills);
     }
 
 

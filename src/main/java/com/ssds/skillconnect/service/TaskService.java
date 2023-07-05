@@ -4,13 +4,14 @@ import com.ssds.skillconnect.config.JwtService;
 import com.ssds.skillconnect.dao.Project;
 import com.ssds.skillconnect.dao.Task;
 import com.ssds.skillconnect.dao.User;
-import com.ssds.skillconnect.model.TaskRequestModel;
+import com.ssds.skillconnect.model.TaskCreateRequestModel;
 import com.ssds.skillconnect.model.TaskResponseModel;
 import com.ssds.skillconnect.model.TaskStatus;
 import com.ssds.skillconnect.repository.ProjectRepository;
 import com.ssds.skillconnect.repository.TaskRepository;
 import com.ssds.skillconnect.repository.UserRepository;
 import com.ssds.skillconnect.utils.exception.ApiRequestException;
+import com.ssds.skillconnect.utils.helper.Mapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -24,10 +25,13 @@ public class TaskService {
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final ProjectRepository projectRepo;
+    private final Mapper mapper;
 
     public List<TaskResponseModel> getAllTasks() {
         try {
-            return taskRepository.findAllTaskResponseModel();
+            return taskRepository.findAll().stream().map(
+                    mapper::Task_to_TaskCreateResponseModel
+            ).toList();
         } catch (Exception e) {
             throw new ApiRequestException(e.getMessage());
         }
@@ -35,16 +39,18 @@ public class TaskService {
 
     public List<TaskResponseModel> getAllTasksByProjectId(Integer projectId) {
         try {
-            return taskRepository.findAllTaskResponseModelByProjectId(projectId);
+            return taskRepository.findAllTaskByProjectId(projectId).stream().map(
+                    mapper::Task_to_TaskCreateResponseModel
+            ).toList();
         } catch (Exception e) {
             throw new ApiRequestException(e.getMessage());
         }
     }
 
 
-    public void addNewTask(
+    public TaskResponseModel addNewTask(
             Integer projectId,
-            TaskRequestModel taskRequestModel,
+            TaskCreateRequestModel taskCreateRequestModel,
             String authorizationHeader) {
         try {
 
@@ -61,26 +67,26 @@ public class TaskService {
             }
 
             Task task = new Task();
-            task.setTaskTitle(taskRequestModel.getTaskTitle());
-            task.setTaskDescription(taskRequestModel.getTaskDescription());
-            task.setTaskStatus(TaskStatus.valueOf(taskRequestModel.getTaskStatus()));
-            task.setTaskCreatedOn(taskRequestModel.getTaskCreatedOn());
+            task.setTaskTitle(taskCreateRequestModel.getTaskTitle());
+            task.setTaskDescription(taskCreateRequestModel.getTaskDescription());
+            task.setTaskStatus(TaskStatus.valueOf(taskCreateRequestModel.getTaskStatus()));
+            task.setTaskCreatedOn(taskCreateRequestModel.getTaskCreatedOn());
 
-            User taskAssignedUser = userRepository.findById(taskRequestModel.getTaskAssignedUserId())
+            User taskAssignedUser = userRepository.findById(taskCreateRequestModel.getTaskAssignedUserId())
                     .orElseThrow(() -> new ApiRequestException("Assigned User not found"));
 
             task.setTaskAssignedUser(taskAssignedUser);
 
             task.setProject(project);
 
-            taskRepository.save(task);
+            return mapper.Task_to_TaskCreateResponseModel(taskRepository.save(task));
 
         } catch (Exception e) {
             throw new ApiRequestException(e.getMessage());
         }
     }
 
-    public void updateTaskStatus(Integer taskId, String status, String authorizationHeader) {
+    public TaskResponseModel updateTaskStatus(Integer taskId, String status, String authorizationHeader) {
         try {
             String jwtToken = authorizationHeader.substring(7);
             String userEmail = jwtService.extractUserEmail(jwtToken);
@@ -101,7 +107,7 @@ public class TaskService {
 
             task.setTaskStatus(TaskStatus.valueOf(status));
 
-            taskRepository.save(task);
+            return mapper.Task_to_TaskCreateResponseModel(taskRepository.save(task));
 
         } catch (Exception e) {
             throw new ApiRequestException(e.getMessage());

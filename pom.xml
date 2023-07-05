@@ -11,7 +11,7 @@
 	<groupId>com.ssds</groupId>
 	<artifactId>skillconnect</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>skillconnect</name>
+	<name>skill-connect</name>
 	<description>Skill Connect</description>
 	<properties>
 		<java.version>17</java.version>
@@ -68,6 +68,17 @@
 			<artifactId>jjwt-jackson</artifactId>
 			<version>0.11.5</version>
 		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-websocket</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-tomcat</artifactId>
+		</dependency>
+
 	</dependencies>
 
 	<build>

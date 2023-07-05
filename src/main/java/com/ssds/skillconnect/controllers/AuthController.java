@@ -5,6 +5,8 @@ import com.ssds.skillconnect.model.UserRegisterModel;
 import com.ssds.skillconnect.service.AuthService;
 import com.ssds.skillconnect.model.AuthenticationResponseModel;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.logging.Level;
@@ -17,21 +19,22 @@ import java.util.logging.Logger;
 public class AuthController {
 
     private final AuthService authService;
-
-    private static final Logger logger = Logger.getLogger(AuthController.class.getName());
     @PostMapping("/register")
-    private AuthenticationResponseModel registerUser(@RequestBody UserRegisterModel userRegisterModel) {
-        return authService.registerUser(userRegisterModel);
+    private ResponseEntity<AuthenticationResponseModel> registerUser(@RequestBody UserRegisterModel userRegisterModel) {
+        AuthenticationResponseModel authenticationResponseModel = authService.registerUser(userRegisterModel);
+        return ResponseEntity.ok(authenticationResponseModel);
     }
 
     @PostMapping("/authenticate")
-    private AuthenticationResponseModel loginUser(@RequestBody UserLoginModel userLoginModel) {
-        return authService.authenticateUser(userLoginModel);
+    private ResponseEntity<AuthenticationResponseModel> loginUser(@RequestBody UserLoginModel userLoginModel) {
+        AuthenticationResponseModel authenticationResponseModel = authService.authenticateUser(userLoginModel);
+        return new ResponseEntity<>(authenticationResponseModel, HttpStatus.ACCEPTED);
     }
 
-    @GetMapping("/logout")
-    private void logoutUser(@RequestHeader(value="Authorization") String authorizationHeader) {
+    @PostMapping("/logout")
+    private ResponseEntity<Void> logoutUser(@RequestHeader(value="Authorization") String authorizationHeader) {
         authService.logoutUser(authorizationHeader);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @GetMapping("/test")

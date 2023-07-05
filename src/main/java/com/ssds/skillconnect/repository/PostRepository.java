@@ -4,6 +4,8 @@ import com.ssds.skillconnect.dao.Post;
 import com.ssds.skillconnect.dao.Skill;
 import com.ssds.skillconnect.model.PostRowResponseModel;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,55 +17,36 @@ import java.util.List;
 @Repository
 public interface PostRepository extends JpaRepository<Post, Integer> {
 
-    @Query("SELECT new com.ssds.skillconnect.model.PostRowResponseModel(" +
-            "p.postId, " +
-            "p.postTitle, " +
-            "p.postDescription, " +
-            "p.urgencyLevel, " +
-            "p.project.projectName, " +
-            "p.project.department.departmentName, " +
-            "p.createdOn) " +
+
+
+    @Query("SELECT p " +
             "FROM Post p " +
             "WHERE (:departmentId IS NULL OR p.project.department.departmentId = :departmentId) " +
             "AND (:urgencyLevel IS NULL OR p.urgencyLevel = :urgencyLevel) " +
-            "AND (:skill IS NULL OR lower(:skill) IN (SELECT lower(s.skillName) FROM p.listOfSkillsRequired l JOIN Skill s ON l.skillId = s.skillId)) " +
-            "ORDER BY p.createdOn DESC")
-    List<PostRowResponseModel> findByDepartmentIdAndPriorityDESCRowResponseModelAndSkill(
+            "AND (:skill IS NULL OR lower(:skill) IN (SELECT lower(s.skillName) FROM p.listOfSkillsRequired l JOIN Skill s ON l.skillId = s.skillId))")
+    Page<Post> findPostByDepartmentIdAndSkillAndPriority(
             @Param("departmentId") Integer departmentId,
             @Param("urgencyLevel") Integer urgencyLevel,
-            @Param("skill") String skill
+            @Param("skill") String skill,
+            Pageable pageable
     );
 
-    @Query("SELECT new com.ssds.skillconnect.model.PostRowResponseModel(" +
-            "p.postId, " +
-            "p.postTitle, " +
-            "p.postDescription, " +
-            "p.urgencyLevel, " +
-            "p.project.projectName, " +
-            "p.project.department.departmentName, " +
-            "p.createdOn) " +
-            "FROM Post p " +
-            "WHERE (:departmentId IS NULL OR p.project.department.departmentId = :departmentId) " +
-            "AND (:urgencyLevel IS NULL OR p.urgencyLevel = :urgencyLevel) " +
-            "AND (:skill IS NULL OR lower(:skill) IN (SELECT lower(s.skillName) FROM p.listOfSkillsRequired l JOIN Skill s ON l.skillId = s.skillId)) " +
-            "ORDER BY p.createdOn ASC")
-    List<PostRowResponseModel> findByDepartmentIdAndPriorityASCRowResponseModelAndSkill(
-            @Param("departmentId") Integer departmentId,
-            @Param("urgencyLevel") Integer urgencyLevel,
-            @Param("skill") String skill
-    );
+//    @Query("SELECT p " +
+//            "FROM Post p " +
+//            "WHERE (:departmentId IS NULL OR p.project.department.departmentId = :departmentId) " +
+//            "AND (:urgencyLevel IS NULL OR p.urgencyLevel = :urgencyLevel) " +
+//            "AND (:skill IS NULL OR lower(:skill) IN (SELECT lower(s.skillName) FROM p.listOfSkillsRequired l JOIN Skill s ON l.skillId = s.skillId)) " +
+//            "ORDER BY p.createdOn DESC")
+//    List<Post> findPostByDepartmentIdAndPriorityDESCAndSkill(
+//            @Param("departmentId") Integer departmentId,
+//            @Param("urgencyLevel") Integer urgencyLevel,
+//            @Param("skill") String skill
+//    );
 
-    @Query("SELECT new com.ssds.skillconnect.model.PostRowResponseModel(" +
-            "p.postId, " +
-            "p.postTitle, " +
-            "p.postDescription, " +
-            "p.urgencyLevel, " +
-            "p.project.projectName, " +
-            "p.project.department.departmentName, " +
-            "p.createdOn) " +
-            "FROM Post p " +
-            "ORDER BY p.createdOn DESC")
-    List<PostRowResponseModel> findAllPostsRowResponseModel();
+    @Query("SELECT p FROM Post p ORDER BY p.createdOn DESC")
+    Page<Post> findAllPostsList(
+            Pageable pageable
+    );
 
     @Transactional
     @Query("DELETE FROM Post p WHERE p.isOpen = :isOpen AND p.createdOn < :thresholdDate")

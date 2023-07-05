@@ -23,6 +23,7 @@ public class PostRowResponseModel {
     private List<Skill> listOfSkillsRequired = null;
     private Timestamp createdOn;
     private Boolean isSaved;
+    private Integer totalNumberOfPages;
 
     public PostRowResponseModel() {
         isSaved = false;
@@ -42,7 +43,24 @@ public class PostRowResponseModel {
         this.projectName = projectName;
         this.departmentName = departmentName;
         this.createdOn = createdOn;
-        this.listOfSkillsRequired = new ArrayList<>();
+    }
+
+    public PostRowResponseModel(Integer postId,
+                                String postTitle,
+                                String postDescription,
+                                Integer urgencyLevel,
+                                String projectName,
+                                String departmentName,
+                                Timestamp createdOn,
+                                List<Skill> listOfSkillsRequired) {
+        this.postId = postId;
+        this.postTitle = postTitle;
+        this.postDescription = postDescription;
+        this.urgencyLevel = urgencyLevel;
+        this.projectName = projectName;
+        this.departmentName = departmentName;
+        this.createdOn = createdOn;
+        this.listOfSkillsRequired = listOfSkillsRequired;
         this.isSaved = false;
     }
 

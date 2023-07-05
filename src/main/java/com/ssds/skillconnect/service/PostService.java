@@ -6,13 +6,22 @@ import com.ssds.skillconnect.dao.Project;
 import com.ssds.skillconnect.dao.Skill;
 import com.ssds.skillconnect.dao.User;
 import com.ssds.skillconnect.model.PostCreateRequestModel;
+import com.ssds.skillconnect.model.PostResponseModel;
 import com.ssds.skillconnect.model.PostRowResponseModel;
+import com.ssds.skillconnect.model.UserDetailResponseModel;
 import com.ssds.skillconnect.repository.PostRepository;
 import com.ssds.skillconnect.repository.ProjectRepository;
 import com.ssds.skillconnect.repository.SkillRepository;
 import com.ssds.skillconnect.repository.UserRepository;
 import com.ssds.skillconnect.utils.exception.ApiRequestException;
+import com.ssds.skillconnect.utils.helper.Mapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.java.Log;
+import lombok.extern.log4j.Log4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +35,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Log
 public class PostService {
 
     private final PostRepository postRepository;
@@ -33,6 +43,7 @@ public class PostService {
     private final ProjectRepository projectRepository;
     private final SkillRepository skillRepository;
     private final JwtService jwtService;
+    private final Mapper mapper;
 
     final Integer Descending = 0;
     final Integer Ascending = 1;
@@ -44,22 +55,38 @@ public class PostService {
             Integer departmentId,
             Integer priority,
             String skill,
-            Integer sort
-    ) {
+            Integer sort,
+            Integer pageNumber, Integer pageSize) {
 
         try {
-            List<PostRowResponseModel> allPosts;
+            Page<Post> allPosts;
             if(departmentId != null || priority != null || skill != null || sort != null) {
 
                 skill = (skill!=null && skill.equals("")) ? null : skill;
                 sort = (sort == null) ? Descending: sort;
 
-                allPosts = (sort.equals(Descending)) ?
-                postRepository.findByDepartmentIdAndPriorityDESCRowResponseModelAndSkill(departmentId, priority, skill)
-                :
-                postRepository.findByDepartmentIdAndPriorityASCRowResponseModelAndSkill(departmentId, priority, skill);
+                Pageable pageable = PageRequest.of(
+                        pageNumber,
+                        pageSize,
+                        (sort.equals(Descending)) ? Sort.by("createdOn").descending() : Sort.by("createdOn").ascending()
+                );
+
+                allPosts = postRepository.findPostByDepartmentIdAndSkillAndPriority(
+                        departmentId,
+                        priority,
+                        skill,
+                        pageable
+                );
+
             } else {
-                allPosts = postRepository.findAllPostsRowResponseModel();
+
+                Pageable pageable = PageRequest.of(
+                        pageNumber,
+                        pageSize,
+                        Sort.by("createdOn").descending()
+                );
+
+                allPosts = postRepository.findAllPostsList(pageable);
             }
 
             String jwtToken = authorizationHeader.substring(7);
@@ -69,13 +96,18 @@ public class PostService {
 
             List<Integer> savedPostIds = userRepository.findSavedPostsIdByUserId(currentUserUserId).orElseThrow(() -> new ApiRequestException("User not found", HttpStatus.NOT_FOUND));
 
-            for(PostRowResponseModel post : allPosts) {
-                post.setIsSaved(savedPostIds.contains(post.getPostId()));
-                post.setListOfSkillsRequired(postRepository.findSkillsByPostId(post.getPostId()));
+            List<PostRowResponseModel> allPostsRowResponseModel = allPosts.getContent().stream()
+                    .map(mapper::Post_to_PostRowResponseModel)
+                    .collect(Collectors.toList());
+
+
+            for(PostRowResponseModel postRowResponseModel : allPostsRowResponseModel) {
+                postRowResponseModel.setIsSaved(savedPostIds.contains(postRowResponseModel.getPostId()));
+                //postRowResponseModel.setListOfSkillsRequired(postRepository.findSkillsByPostId(postRowResponseModel.getPostId()));
+                postRowResponseModel.setTotalNumberOfPages(allPosts.getTotalPages());
             }
 
-
-            return allPosts;
+            return allPostsRowResponseModel;
 
         } catch (Exception e) {
             throw new ApiRequestException(e.getMessage());
@@ -83,7 +115,7 @@ public class PostService {
 
     }
 
-    public Post createPost(PostCreateRequestModel postCreateRequestModel, String authorizationHeader) {
+    public PostResponseModel createPost(PostCreateRequestModel postCreateRequestModel, String authorizationHeader) {
         try {
 
             String jwtToken = authorizationHeader.substring(7);
@@ -131,33 +163,38 @@ public class PostService {
             newPost.setUser(currentUser);
             newPost.setProject(currentProject);
 
-            return postRepository.save(newPost);
+            return mapper.Post_to_PostResponseModel(postRepository.save(newPost));
 
         } catch (Exception e) {
             throw new ApiRequestException(e.getMessage());
         }
     }
 
-    public Post getPostById(Integer postId, String authorizationHeader) {
+    public PostResponseModel getPostById(Integer postId, String authorizationHeader) {
 
-        return postRepository.findById(postId)
+        Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ApiRequestException("Post not found", HttpStatus.NOT_FOUND));
+
+        return mapper.Post_to_PostResponseModel(post);
+
     }
 
 
-    public List<User> getAllApplicantsToPost(Integer postId) {
+    public List<UserDetailResponseModel> getAllApplicantsToPost(Integer postId) {
         try{
             Post post = postRepository.findById(postId)
                     .orElseThrow(() -> new ApiRequestException("Post not found", HttpStatus.NOT_FOUND));
 
-            return post.getListOfApplicants();
+            return post.getListOfApplicants().stream().map(
+                    mapper::User_to_UserDetailResponseModel
+            ).toList();
 
         } catch (Exception e) {
             throw new ApiRequestException(e.getMessage());
         }
     }
 
-    public Post approveTheUser(Integer postId, Integer userId, String authorizationHeader) {
+    public PostResponseModel approveTheUser(Integer postId, Integer userId, String authorizationHeader) {
         try {
             String jwtToken = authorizationHeader.substring(7);
             String userEmail = jwtService.extractUserEmail(jwtToken);
@@ -186,13 +223,13 @@ public class PostService {
             project.setUsersAssignedProjectList(projectUsers);
             projectRepository.save(project);
 
-            return currentPost;
+            return mapper.Post_to_PostResponseModel(currentPost);
         } catch (Exception e) {
             throw new ApiRequestException(e.getMessage());
         }
     }
 
-    public Post applyToPost(Integer postId, String authorizationHeader) {
+    public PostResponseModel applyToPost(Integer postId, String authorizationHeader) {
         try{
 
             String jwtToken = authorizationHeader.substring(7);
@@ -208,7 +245,7 @@ public class PostService {
             applicants.add(currentUser);
             currentPost.setListOfApplicants(applicants);
             currentPost.setTotalApplicants(currentPost.getTotalApplicants() + 1);
-            return postRepository.save(currentPost);
+            return mapper.Post_to_PostResponseModel(postRepository.save(currentPost));
 
         } catch (Exception e) {
             throw new ApiRequestException(e.getMessage());

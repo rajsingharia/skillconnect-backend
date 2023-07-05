@@ -1,6 +1,8 @@
 package com.ssds.skillconnect.dao;
 
 
+import com.ssds.skillconnect.model.MessageRowResponseModel;
+import com.ssds.skillconnect.model.UserDetailResponseModel;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,7 +10,6 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-import java.sql.Date;
 import java.sql.Timestamp;
 
 @Entity

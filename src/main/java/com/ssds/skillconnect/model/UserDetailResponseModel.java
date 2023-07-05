@@ -35,4 +35,20 @@ public class UserDetailResponseModel {
         this.listOfSkills = new ArrayList<>();
     }
 
+    public UserDetailResponseModel(
+            Integer userId,
+            String name,
+            String email,
+            Department department,
+            String experience,
+            List<Skill> listOfSkills
+    ){
+        this.userId = userId;
+        this.name = name;
+        this.email = email;
+        this.department = department;
+        this.experience = experience;
+        this.listOfSkills = listOfSkills;
+    }
+
 }

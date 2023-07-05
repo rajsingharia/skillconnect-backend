@@ -18,36 +18,8 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 
     Optional<User> findByEmail(String email);
 
-
-    @Query("SELECT new com.ssds.skillconnect.model.UserDetailResponseModel(" +
-            " u.userId, " +
-            "u.name, " +
-            "u.email, " +
-            "u.department, " +
-            "u.experience ) " +
-            "FROM User u " +
-            "WHERE u.email = :email")
-    Optional<UserDetailResponseModel> findUserDetailResponseModelByEmail(@Param("email") String email);
-
-    @Query("SELECT new com.ssds.skillconnect.model.UserDetailResponseModel( " +
-            "u.userId, " +
-            "u.name, " +
-            "u.email, " +
-            "u.department, " +
-            "u.experience ) " +
-            "FROM User u " +
-            "WHERE u.userId = :userId")
-    Optional<UserDetailResponseModel> findUserDetailResponseModelByUserId(@Param("userId") Integer userId);
-
-    @Query("SELECT new com.ssds.skillconnect.model.UserDetailResponseModel( " +
-            "u.userId, " +
-            "u.name, " +
-            "u.email, " +
-            "u.department, " +
-            "u.experience ) " +
-            "FROM User u " +
-            "WHERE u.department.departmentId = :departmentId")
-    Optional<List<UserDetailResponseModel>> findUserDetailResponseModelByDepartmentId(@Param("departmentId") Integer departmentId);
+    @Query("SELECT u FROM User u WHERE u.department.departmentId = :departmentId")
+    Optional<List<User>> findUserByDepartmentId(@Param("departmentId") Integer departmentId);
 
     @Query("SELECT new com.ssds.skillconnect.model.UserSearchResponseModel( " +
             "u.userId, " +
@@ -67,19 +39,15 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     Optional<List<Post>> findSavedPostsByUserId(@Param("userId") Integer userId);
 
 
+    //TODO: not required for now
     @Query("SELECT u.listOfSkills FROM User u WHERE u.userId = :userId")
     List<Skill> findListOfSkillsByUserId(@Param("userId") Integer userId);
 
-    @Query("SELECT new com.ssds.skillconnect.model.UserDetailResponseModel( " +
-            "u.userId, " +
-            "u.name, " +
-            "u.email, " +
-            "u.department.departmentName, " +
-            "u.experience ) " +
-            "FROM User u " +
+
+    @Query("SELECT u FROM User u " +
             "WHERE u.userId IN (SELECT uAPL.userId FROM Project p JOIN p.usersAssignedProjectList uAPL WHERE p.projectId = :projectId) " +
             "AND u.userId != :userId")
-    List<UserDetailResponseModel> findAllUserResponseModelInProject(
+    Optional<List<User>> findAllUsersInProject(
             @Param("userId") Integer userId,
             @Param("projectId") Integer projectId
     );

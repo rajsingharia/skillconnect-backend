@@ -4,17 +4,19 @@ import com.ssds.skillconnect.config.JwtService;
 import com.ssds.skillconnect.dao.Department;
 import com.ssds.skillconnect.dao.Project;
 import com.ssds.skillconnect.dao.User;
-import com.ssds.skillconnect.model.CountOfTaskTypesModel;
-import com.ssds.skillconnect.model.ProjectModel;
-import com.ssds.skillconnect.model.ProjectRowResponseModel;
-import com.ssds.skillconnect.model.UserDetailResponseModel;
+import com.ssds.skillconnect.model.*;
 import com.ssds.skillconnect.repository.DepartmentRepository;
 import com.ssds.skillconnect.repository.ProjectRepository;
 import com.ssds.skillconnect.repository.TaskRepository;
 import com.ssds.skillconnect.repository.UserRepository;
 import com.ssds.skillconnect.utils.exception.ApiRequestException;
+import com.ssds.skillconnect.utils.helper.Mapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 import java.util.Objects;
 
@@ -27,27 +29,14 @@ public class ProjectService {
     private final DepartmentRepository departmentRepository;
     private final TaskRepository taskRepository;
     private final JwtService jwtService;
+    private final Mapper mapper;
 
-    public List<ProjectRowResponseModel> getAllProjects() {
+    public List<ProjectRowResponseModel> getAllProjects(
+            String authorizationHeader,
+            Integer pageNumber,
+            Integer pageSize) {
         try {
-            List<ProjectRowResponseModel> projectRowResponseModelList = projectRepo.findAllProjectRowResponseModels();
 
-            projectRowResponseModelList.forEach(projectRowResponseModel -> {
-                Integer projectId = projectRowResponseModel.getProjectId();
-                CountOfTaskTypesModel countOfTaskTypesModel = taskRepository.findCountOfTaskTypesModelInProjectId(projectId);
-                projectRowResponseModel.setCountOfTaskTypes(countOfTaskTypesModel);
-                projectRowResponseModel.setIsCreator(false);
-            });
-
-            return projectRowResponseModelList;
-
-        } catch (Exception e) {
-            throw new ApiRequestException(e.getMessage());
-        }
-    }
-
-    public List<ProjectRowResponseModel> getProjectByUser(String authorizationHeader) {
-        try {
             String jwtToken = authorizationHeader.substring(7);
             String userEmail = jwtService.extractUserEmail(jwtToken);
 
@@ -56,7 +45,15 @@ public class ProjectService {
 
             Integer userId = user.getUserId();
 
-            List<ProjectRowResponseModel> projectRowResponseModelList = projectRepo.findByPersonsAssignedProjectList(userId);
+            Pageable pageable = PageRequest.of(pageNumber, pageSize);
+
+            Page<ProjectRowResponseModel> projectRowResponseModelPage = projectRepo.findAll(
+                    pageable
+            ).map(
+                    mapper::Project_to_ProjectRowResponseModel
+            );
+
+            List<ProjectRowResponseModel> projectRowResponseModelList = projectRowResponseModelPage.getContent();
 
             projectRowResponseModelList.forEach(projectRowResponseModel -> {
                 Integer projectId = projectRowResponseModel.getProjectId();
@@ -69,6 +66,52 @@ public class ProjectService {
                 projectRowResponseModel.setIsCreator(
                         Objects.equals(currentProject.getProjectCreator().getUserId(), userId)
                 );
+                projectRowResponseModel.setTotalNumberOfPages(projectRowResponseModelPage.getTotalPages());
+            });
+
+            return projectRowResponseModelList;
+
+        } catch (Exception e) {
+            throw new ApiRequestException(e.getMessage());
+        }
+    }
+
+    public List<ProjectRowResponseModel> getProjectByUser(
+            String authorizationHeader,
+            Integer pageNumber,
+            Integer pageSize) {
+        try {
+            String jwtToken = authorizationHeader.substring(7);
+            String userEmail = jwtService.extractUserEmail(jwtToken);
+
+            User user = userRepository.findByEmail(userEmail)
+                    .orElseThrow(() -> new ApiRequestException("User not found"));
+
+            Integer userId = user.getUserId();
+
+            Pageable pageable = PageRequest.of(pageNumber, pageSize);
+
+            Page<Project> projectRowResponseModelPage = projectRepo.findAllProjectByProjectCreatorOrPersonsAssigned(
+                    pageable,
+                    userId
+            );
+
+            List<ProjectRowResponseModel>projectRowResponseModelList = projectRowResponseModelPage.stream().map(
+                                    mapper::Project_to_ProjectRowResponseModel
+                            ).toList();
+
+            projectRowResponseModelList.forEach(projectRowResponseModel -> {
+                Integer projectId = projectRowResponseModel.getProjectId();
+                CountOfTaskTypesModel countOfTaskTypesModel = taskRepository.findCountOfTaskTypesModelInProjectId(projectId);
+                projectRowResponseModel.setCountOfTaskTypes(countOfTaskTypesModel);
+
+                Project currentProject = projectRepo.findById(projectId)
+                        .orElseThrow(() -> new ApiRequestException("Project not found"));
+
+                projectRowResponseModel.setIsCreator(
+                        Objects.equals(currentProject.getProjectCreator().getUserId(), userId)
+                );
+                projectRowResponseModel.setTotalNumberOfPages(projectRowResponseModelPage.getTotalPages());
 
             });
 
@@ -80,7 +123,7 @@ public class ProjectService {
     }
 
 
-    public Project createProject(ProjectModel projectModel, String authorizationHeader) {
+    public ProjectResponseModel createProject(ProjectCreateRequestModel projectCreateRequestModel, String authorizationHeader) {
         try {
             Project project = new Project();
 
@@ -92,40 +135,42 @@ public class ProjectService {
 
             project.setProjectCreator(projectCreator);
 
-            project.setProjectName(projectModel.getProjectName());
-            project.setProjectDetails(projectModel.getProjectDetails());
-            project.setStartDate(projectModel.getStartDate());
-            project.setEndDate(projectModel.getEndDate());
-            project.setIsFinished(projectModel.getIsFinished());
+            project.setProjectName(projectCreateRequestModel.getProjectName());
+            project.setProjectDetails(projectCreateRequestModel.getProjectDetails());
+            project.setStartDate(projectCreateRequestModel.getStartDate());
+            project.setEndDate(projectCreateRequestModel.getEndDate());
+            project.setIsFinished(projectCreateRequestModel.getIsFinished());
 
-            Department userDepartment = departmentRepository.findById(projectModel.getDepartmentId())
+            Department userDepartment = departmentRepository.findById(projectCreateRequestModel.getDepartmentId())
                     .orElseThrow(() -> new ApiRequestException("Department not found"));
 
             project.setDepartment(userDepartment);
 
             List<User> usersAssignedProjectList = userRepository
-                    .findAllById(projectModel.getUserIdsAssignedProjectList());
+                    .findAllById(projectCreateRequestModel.getUserIdsAssignedProjectList());
 
             project.setUsersAssignedProjectList(usersAssignedProjectList);
 
-            return projectRepo.save(project);
+            return mapper.Project_to_ProjectCreateResponseModel(projectRepo.save(project));
 
         } catch (Exception e) {
             throw new ApiRequestException(e.getMessage());
         }
     }
 
-    public Project getProjectById(Integer projectId) {
+    public ProjectResponseModel getProjectById(Integer projectId) {
         try {
-            return projectRepo.findById(projectId)
+            Project project = projectRepo.findById(projectId)
                     .orElseThrow(() -> new ApiRequestException("Project not found"));
 
+            return mapper.Project_to_ProjectCreateResponseModel(project);
+
         } catch (Exception e) {
             throw new ApiRequestException(e.getMessage());
         }
     }
 
-    public Project addUserToProject(
+    public ProjectResponseModel addUserToProject(
             Integer projectId,
             Integer userId,
             String authorizationHeader) {
@@ -152,14 +197,14 @@ public class ProjectService {
                 throw new ApiRequestException("User already assigned to project");
             }
             usersAssignedProjectList.add(user);
-            return projectRepo.save(project);
+            return mapper.Project_to_ProjectCreateResponseModel(projectRepo.save(project));
 
         } catch (Exception e) {
             throw new ApiRequestException(e.getMessage());
         }
     }
 
-    public Project removeUserFromProject(Integer projectId, Integer userId) {
+    public ProjectResponseModel removeUserFromProject(Integer projectId, Integer userId) {
         try {
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new ApiRequestException("User not found"));
@@ -172,20 +217,22 @@ public class ProjectService {
                 throw new ApiRequestException("User not assigned to project");
             }
             usersAssignedProjectList.remove(user);
-            return projectRepo.save(project);
+            return mapper.Project_to_ProjectCreateResponseModel(projectRepo.save(project));
 
         } catch (Exception e) {
             throw new ApiRequestException(e.getMessage());
         }
     }
 
-    public List<Project> getAllOpenProjects() {
+    public List<ProjectResponseModel> getAllOpenProjects() {
         try {
             List<Project> projects = projectRepo.findAllOpenProjects();
             if (projects == null) {
                 throw new ApiRequestException("No projects found");
             }
-            return projects;
+            return projects.stream().map(
+                    mapper::Project_to_ProjectCreateResponseModel
+            ).toList();
 
         } catch (Exception e) {
             throw new ApiRequestException(e.getMessage());
@@ -210,7 +257,11 @@ public class ProjectService {
                 throw new ApiRequestException("Only project creator can view users in project");
             }
 
-            return userRepository.findAllUserResponseModelInProject(userId, projectId);
+            List<User> userList = userRepository.findAllUsersInProject(userId, projectId).orElseThrow( () -> new ApiRequestException("No users found in project"));
+
+            return userList.stream().map(
+                    mapper::User_to_UserDetailResponseModel
+            ).toList();
 
         } catch (Exception e) {
             throw new ApiRequestException(e.getMessage());

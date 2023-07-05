@@ -17,8 +17,9 @@ public class ProjectRowResponseModel {
     private String departmentName;
     private Boolean isCreator;
     private CountOfTaskTypesModel countOfTaskTypes;
+    private Integer totalNumberOfPages;
 
-    ProjectRowResponseModel(Integer projectId,
+    public ProjectRowResponseModel(Integer projectId,
                             String projectName,
                             String projectDetails,
                             Timestamp startDate,

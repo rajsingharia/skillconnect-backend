@@ -4,18 +4,23 @@ import com.ssds.skillconnect.config.JwtService;
 import com.ssds.skillconnect.dao.Message;
 import com.ssds.skillconnect.dao.Post;
 import com.ssds.skillconnect.dao.User;
-import com.ssds.skillconnect.model.MessageModel;
+import com.ssds.skillconnect.model.MessageRequestModel;
+import com.ssds.skillconnect.model.MessageRowResponseModel;
+import com.ssds.skillconnect.model.UserDetailResponseModel;
 import com.ssds.skillconnect.repository.MessageRepository;
 import com.ssds.skillconnect.repository.PostRepository;
 import com.ssds.skillconnect.repository.UserRepository;
 import com.ssds.skillconnect.utils.exception.ApiRequestException;
+import com.ssds.skillconnect.utils.helper.Mapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.java.Log;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Objects;
 
 @Service
+@Log
 @RequiredArgsConstructor
 public class MessageService {
     private final MessageRepository messageRepository;
@@ -23,18 +28,22 @@ public class MessageService {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-    public List<Message> getMessageByPostId(Integer postId) {
+    private final Mapper mapper;
+
+    public List<MessageRowResponseModel> getMessageRowResponseModelByPostId(Integer postId) {
         try {
-            return messageRepository.findByPostIdSortedByCreatedOn(postId);
+            return messageRepository.findAllByPostedOnPostId(postId).stream().map(
+                    mapper::Message_to_MessageRowResponseModel
+            ).toList();
+
         } catch (Exception e) {
             throw new ApiRequestException("Error while fetching messages");
         }
     }
 
-
-    public Message postMessageByPostId(Integer postId, MessageModel messageModel, String authorizationHeader) {
+    public MessageRowResponseModel postMessageRowResponseModelByPostId(MessageRequestModel messageRequestModel, String authorizationHeader) {
         try {
-            Post post = postRepository.findById(messageModel.getPostId())
+            Post post = postRepository.findById(messageRequestModel.getPostId())
                     .orElseThrow(() -> new ApiRequestException("Post not found"));
 
             User userCreatedPost = userRepository.findById(post.getUser().getUserId())
@@ -48,10 +57,10 @@ public class MessageService {
 
             Message newMessage = new Message();
 
-            newMessage.setMessage(messageModel.getMessage());
+            newMessage.setMessage(messageRequestModel.getMessage());
             newMessage.setPostedOn(post);
             newMessage.setSender(sender);
-            newMessage.setCreatedOn(messageModel.getCreatedOn());
+            newMessage.setCreatedOn(messageRequestModel.getCreatedOn());
 
             boolean isAuthor = false;
             if(userCreatedPost != null) {
@@ -59,10 +68,12 @@ public class MessageService {
             }
             newMessage.setIsAuthor(isAuthor);
 
-            return messageRepository.save(newMessage);
+            return mapper.Message_to_MessageRowResponseModel(messageRepository.save(newMessage));
 
         } catch (Exception e) {
-            throw new ApiRequestException("Error while posting message");
+            throw new ApiRequestException("Error while posting message" + e.getMessage());
         }
     }
+
+
 }
