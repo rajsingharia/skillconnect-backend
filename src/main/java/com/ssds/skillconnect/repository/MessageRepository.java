@@ -38,6 +38,9 @@ public interface MessageRepository extends JpaRepository<Message, Integer> {
 
 
 
-    @Query("SELECT m FROM Message m WHERE m.postedOn.postId = :postId ORDER BY m.createdOn DESC")
+    @Query("SELECT m " +
+            "FROM Message m " +
+            "WHERE m.postedOn.postId = :postId " +
+            "ORDER BY m.createdOn DESC")
     List<Message> findAllByPostedOnPostId(Integer postId);
 }

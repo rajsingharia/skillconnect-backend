@@ -59,10 +59,9 @@ public class PostController {
     @GetMapping("/{postId}")
     @ResponseBody
     public ResponseEntity<PostResponseModel> getPostById(
-            @PathVariable Integer postId,
-            @RequestHeader(value="Authorization") String authorizationHeader
+            @PathVariable Integer postId
     ) {
-        PostResponseModel postById = postService.getPostById(postId, authorizationHeader);
+        PostResponseModel postById = postService.getPostById(postId);
         return ResponseEntity.ok(postById);
     }
 

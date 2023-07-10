@@ -56,16 +56,13 @@ public class Post {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Project project; //id of the project for which the post is posted
 
-
     @ManyToMany
     @JoinTable(
             name = "post_skill_mapping",
             joinColumns = @JoinColumn(name = "post_id", referencedColumnName = "postId"),
             inverseJoinColumns = @JoinColumn(name = "skill_id", referencedColumnName = "skillId"))
     private List<Skill> listOfSkillsRequired = new ArrayList<>();
-
     //private List<String> listOfSkillsRequired = new ArrayList<>();
-
 
     @OneToMany(
             orphanRemoval = true

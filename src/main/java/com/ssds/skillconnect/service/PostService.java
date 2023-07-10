@@ -17,19 +17,15 @@ import com.ssds.skillconnect.utils.exception.ApiRequestException;
 import com.ssds.skillconnect.utils.helper.Mapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
-import lombok.extern.log4j.Log4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-
+import java.sql.Timestamp;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -68,10 +64,10 @@ public class PostService {
                 Pageable pageable = PageRequest.of(
                         pageNumber,
                         pageSize,
-                        (sort.equals(Descending)) ? Sort.by("createdOn").descending() : Sort.by("createdOn").ascending()
+                        sort.equals(Descending) ? Sort.by("createdOn").descending() : Sort.by("createdOn").ascending()
                 );
 
-                allPosts = postRepository.findPostByDepartmentIdAndSkillAndPriority(
+                allPosts = postRepository.findPostByDepartmentIdAndSkillAndUrgencyLevel(
                         departmentId,
                         priority,
                         skill,
@@ -86,7 +82,7 @@ public class PostService {
                         Sort.by("createdOn").descending()
                 );
 
-                allPosts = postRepository.findAllPostsList(pageable);
+                allPosts = postRepository.findAll(pageable);
             }
 
             String jwtToken = authorizationHeader.substring(7);
@@ -94,12 +90,12 @@ public class PostService {
             Integer currentUserUserId = userRepository.findByEmail(userEmail)
                     .orElseThrow(() -> new ApiRequestException("User not found", HttpStatus.NOT_FOUND)).getUserId();
 
-            List<Integer> savedPostIds = userRepository.findSavedPostsIdByUserId(currentUserUserId).orElseThrow(() -> new ApiRequestException("User not found", HttpStatus.NOT_FOUND));
+            List<Integer> savedPostIds = userRepository.findSavedPostsIdByUserId(currentUserUserId)
+                    .orElseThrow(() -> new ApiRequestException("User not found", HttpStatus.NOT_FOUND));
 
             List<PostRowResponseModel> allPostsRowResponseModel = allPosts.getContent().stream()
                     .map(mapper::Post_to_PostRowResponseModel)
                     .collect(Collectors.toList());
-
 
             for(PostRowResponseModel postRowResponseModel : allPostsRowResponseModel) {
                 postRowResponseModel.setIsSaved(savedPostIds.contains(postRowResponseModel.getPostId()));
@@ -170,7 +166,7 @@ public class PostService {
         }
     }
 
-    public PostResponseModel getPostById(Integer postId, String authorizationHeader) {
+    public PostResponseModel getPostById(Integer postId) {
 
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ApiRequestException("Post not found", HttpStatus.NOT_FOUND));
@@ -255,7 +251,8 @@ public class PostService {
 
     public void deleteClosedPostsOlderThan3Month() {
         try {
-            postRepository.deleteAllByIsOpenAndCreatedOnBefore(false, LocalDate.now().minusMonths(3));
+            Timestamp thresholdDate = Timestamp.valueOf(LocalDate.now().minusMonths(3).atStartOfDay());
+            postRepository.deleteAllByIsOpenAndCreatedOnBefore(false, thresholdDate);
         } catch (Exception e) {
             throw new ApiRequestException(e.getMessage());
         }

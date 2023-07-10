@@ -97,7 +97,7 @@ public class UserService {
 
     public List<UserDetailResponseModel> getAllUsersByDepartmentId(Integer departmentId) {
         try {
-            List<User> userList = userRepository.findUserByDepartmentId(departmentId)
+            List<User> userList = userRepository.findAllUserByDepartmentId(departmentId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
             return userList.stream().map(

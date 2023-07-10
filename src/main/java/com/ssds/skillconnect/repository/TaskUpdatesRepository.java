@@ -12,9 +12,9 @@ import java.util.Optional;
 @Repository
 public interface TaskUpdatesRepository extends JpaRepository<TaskUpdates, Integer> {
 
-    @Query("SELECT tU FROM TaskUpdates tU WHERE tU.task.taskId = :taskId")
-    Optional<List<TaskUpdates>> findAllByTaskId(
-            @Param("taskId") Integer taskId
-    );
+    @Query("SELECT tU " +
+            "FROM TaskUpdates tU " +
+            "WHERE tU.task.taskId = :taskId")
+    Optional<List<TaskUpdates>> findAllByTaskId(@Param("taskId") Integer taskId);
 
 }

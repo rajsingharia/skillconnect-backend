@@ -3,7 +3,6 @@ package com.ssds.skillconnect.repository;
 import com.ssds.skillconnect.dao.Post;
 import com.ssds.skillconnect.dao.Skill;
 import com.ssds.skillconnect.dao.User;
-import com.ssds.skillconnect.model.UserDetailResponseModel;
 import com.ssds.skillconnect.model.UserSearchResponseModel;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -18,8 +17,10 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 
     Optional<User> findByEmail(String email);
 
-    @Query("SELECT u FROM User u WHERE u.department.departmentId = :departmentId")
-    Optional<List<User>> findUserByDepartmentId(@Param("departmentId") Integer departmentId);
+    @Query("SELECT u " +
+            "FROM User u " +
+            "WHERE u.department.departmentId = :departmentId")
+    Optional<List<User>> findAllUserByDepartmentId(@Param("departmentId") Integer departmentId);
 
     @Query("SELECT new com.ssds.skillconnect.model.UserSearchResponseModel( " +
             "u.userId, " +
@@ -32,15 +33,21 @@ public interface UserRepository extends JpaRepository<User, Integer> {
             @Param("projectId") Integer projectId,
             @Param("name") String name);
 
-    @Query("SELECT sP.postId FROM User u JOIN u.savedPosts sP WHERE u.userId = :userId")
+    @Query("SELECT sP.postId " +
+            "FROM User u " +
+            "JOIN u.savedPosts sP WHERE u.userId = :userId")
     Optional<List<Integer>> findSavedPostsIdByUserId(@Param("userId") Integer userId);
 
-    @Query("SELECT u.savedPosts FROM User u WHERE u.userId = :userId")
+    @Query("SELECT u.savedPosts " +
+            "FROM User u " +
+            "WHERE u.userId = :userId")
     Optional<List<Post>> findSavedPostsByUserId(@Param("userId") Integer userId);
 
 
     //TODO: not required for now
-    @Query("SELECT u.listOfSkills FROM User u WHERE u.userId = :userId")
+    @Query("SELECT u.listOfSkills " +
+            "FROM User u " +
+            "WHERE u.userId = :userId")
     List<Skill> findListOfSkillsByUserId(@Param("userId") Integer userId);
 
 

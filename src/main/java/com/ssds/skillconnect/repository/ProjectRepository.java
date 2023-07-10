@@ -12,14 +12,14 @@ import java.util.List;
 
 @Repository
 public interface ProjectRepository extends JpaRepository<Project, Integer> {
-    @Query("SELECT p FROM Project p WHERE p.projectCreator.userId = :userId OR :userId IN (SELECT u.userId FROM p.usersAssignedProjectList u)")
+    @Query("SELECT p " +
+            "FROM Project p " +
+            "WHERE p.projectCreator.userId = :userId OR :userId IN (SELECT u.userId FROM p.usersAssignedProjectList u)")
     Page<Project> findAllProjectByProjectCreatorOrPersonsAssigned(Pageable pageable, @Param("userId") Integer userId);
 
-    @Query("SELECT p FROM Project p WHERE p.isFinished = false")
+    @Query("SELECT p " +
+            "FROM Project p " +
+            "WHERE p.isFinished = false")
     List<Project> findAllOpenProjects();
-
-
-//    @Query("SELECT p.usersAssignedProjectList.userId FROM Project p WHERE p.projectId = :projectId")
-//    List<Integer> findUserIdsByProjectId(@Param("projectId") Integer projectId);
 
 }

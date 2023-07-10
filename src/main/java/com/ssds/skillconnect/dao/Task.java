@@ -3,6 +3,7 @@ package com.ssds.skillconnect.dao;
 import com.ssds.skillconnect.model.TaskStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
@@ -13,6 +14,7 @@ import java.sql.Timestamp;
 @Entity
 @Table(name = "task")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Task {

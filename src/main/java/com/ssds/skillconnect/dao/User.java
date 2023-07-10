@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ssds.skillconnect.model.Role;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
@@ -20,6 +21,7 @@ import java.util.List;
 @Entity
 @Table(name = "sk_user")
 @Data
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class User implements UserDetails {
