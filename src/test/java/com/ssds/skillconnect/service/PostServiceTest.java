@@ -48,7 +48,6 @@ class PostServiceTest {
 
     private String authHeader = "Bearer ";
     private User user;
-    private Project project;
     private Post post;
 
 
@@ -60,7 +59,7 @@ class PostServiceTest {
                 .email("test@test")
                 .build();
 
-        project = Project.builder()
+        Project project = Project.builder()
                 .projectId(1)
                 .projectCreator(user)
                 .usersAssignedProjectList(new ArrayList<>())

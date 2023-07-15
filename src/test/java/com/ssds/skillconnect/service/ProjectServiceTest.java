@@ -45,7 +45,7 @@ class ProjectServiceTest {
     @Mock
     private TaskRepository taskRepository;
 
-    private String authHeader = "Bearer ";
+    private final String authHeader = "Bearer ";
     private User user;
     private User user2;
     private List<User> userAssignProjectList;
@@ -158,7 +158,7 @@ class ProjectServiceTest {
                 .projectName(projectName)
                 .projectDetails(projectDetails)
                 .departmentId(departmentId)
-                .userIdsAssignedProjectList(new ArrayList<>(List.of(user2.getUserId())))
+                .userIdsAssignedProjectList(userAssignProjectList.stream().map(User::getUserId).toList())
                 .build();
 
         //when
