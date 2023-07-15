@@ -23,6 +23,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.*;
@@ -56,10 +57,10 @@ public class PostService {
 
         try {
             Page<Post> allPosts;
-            if(departmentId != null || priority != null || skill != null || sort != null) {
+            if (departmentId != null || priority != null || skill != null || sort != null) {
 
-                skill = (skill!=null && skill.equals("")) ? null : skill;
-                sort = (sort == null) ? Descending: sort;
+                skill = (skill != null && skill.equals("")) ? null : skill;
+                sort = (sort == null) ? Descending : sort;
 
                 Pageable pageable = PageRequest.of(
                         pageNumber,
@@ -93,11 +94,15 @@ public class PostService {
             List<Integer> savedPostIds = userRepository.findSavedPostsIdByUserId(currentUserUserId)
                     .orElseThrow(() -> new ApiRequestException("User not found", HttpStatus.NOT_FOUND));
 
+            if (allPosts == null) {
+                throw new ApiRequestException("No posts found", HttpStatus.NOT_FOUND);
+            }
+
             List<PostRowResponseModel> allPostsRowResponseModel = allPosts.getContent().stream()
                     .map(mapper::Post_to_PostRowResponseModel)
                     .collect(Collectors.toList());
 
-            for(PostRowResponseModel postRowResponseModel : allPostsRowResponseModel) {
+            for (PostRowResponseModel postRowResponseModel : allPostsRowResponseModel) {
                 postRowResponseModel.setIsSaved(savedPostIds.contains(postRowResponseModel.getPostId()));
                 //postRowResponseModel.setListOfSkillsRequired(postRepository.findSkillsByPostId(postRowResponseModel.getPostId()));
                 postRowResponseModel.setTotalNumberOfPages(allPosts.getTotalPages());
@@ -113,7 +118,6 @@ public class PostService {
 
     public PostResponseModel createPost(PostCreateRequestModel postCreateRequestModel, String authorizationHeader) {
         try {
-
             String jwtToken = authorizationHeader.substring(7);
             String userEmail = jwtService.extractUserEmail(jwtToken);
 
@@ -124,42 +128,47 @@ public class PostService {
                     .findById(postCreateRequestModel.getProjectId())
                     .orElseThrow(() -> new ApiRequestException("Project not found", HttpStatus.NOT_FOUND));
 
-
-
-            if(!Objects.equals(currentProject.getProjectCreator().getUserId(), currentUser.getUserId())
+            if (!Objects.equals(currentProject.getProjectCreator().getUserId(), currentUser.getUserId())
                     && !currentProject.getUsersAssignedProjectList().contains(currentUser)) {
                 // If the current user is not the creator of the project and is not assigned to the project, then throw an exception
                 throw new ApiRequestException("You are not authorized to create a post for this project");
             }
 
-            Post newPost = new Post();
-
-            newPost.setPostTitle(postCreateRequestModel.getPostTitle());
-            newPost.setPostDescription(postCreateRequestModel.getPostDescription());
-            newPost.setUrgencyLevel(postCreateRequestModel.getUrgencyLevel());
-            newPost.setCreatedOn(postCreateRequestModel.getCreatedOn());
-            newPost.setIsOpen(postCreateRequestModel.getIsOpen());
-            newPost.setTotalApplicants(postCreateRequestModel.getTotalApplicants());
+            Post newPost = Post.builder()
+                    .postTitle(postCreateRequestModel.getPostTitle())
+                    .postDescription(postCreateRequestModel.getPostDescription())
+                    .urgencyLevel(postCreateRequestModel.getUrgencyLevel())
+                    .createdOn(postCreateRequestModel.getCreatedOn())
+                    .isOpen(postCreateRequestModel.getIsOpen())
+                    .totalApplicants(postCreateRequestModel.getTotalApplicants())
+                    .user(currentUser)
+                    .project(currentProject)
+                    .build();
 
             List<Skill> listOfSkills = new ArrayList<>();
 
-            postCreateRequestModel.getListOfSkillStringsRequired().forEach(skillName -> {
-                Optional<Skill> skill = skillRepository.findBySkillName(skillName);
-                if(skill.isPresent()) {
-                    listOfSkills.add(skill.get());
-                } else {
-                    Skill newSkill = new Skill();
-                    newSkill.setSkillName(skillName);
-                    listOfSkills.add(skillRepository.save(newSkill));
-                }
-            });
+            if (postCreateRequestModel.getListOfSkillStringsRequired() != null &&
+                    postCreateRequestModel.getListOfSkillStringsRequired().size() > 0) {
+                postCreateRequestModel.getListOfSkillStringsRequired().forEach(
+                        skillName -> {
+                            Optional<Skill> skill = skillRepository.findBySkillName(skillName);
+                            if (skill.isPresent()) {
+                                listOfSkills.add(skill.get());
+                            } else {
+                                Skill newSkill = Skill.builder()
+                                        .skillName(skillName)
+                                        .build();
+                                listOfSkills.add(skillRepository.save(newSkill));
+                            }
+                        }
+                );
+            }
 
             newPost.setListOfSkillsRequired(listOfSkills);
 
-            newPost.setUser(currentUser);
-            newPost.setProject(currentProject);
+            Post savedPost = postRepository.save(newPost);
 
-            return mapper.Post_to_PostResponseModel(postRepository.save(newPost));
+            return mapper.Post_to_PostResponseModel(savedPost);
 
         } catch (Exception e) {
             throw new ApiRequestException(e.getMessage());
@@ -177,7 +186,7 @@ public class PostService {
 
 
     public List<UserDetailResponseModel> getAllApplicantsToPost(Integer postId) {
-        try{
+        try {
             Post post = postRepository.findById(postId)
                     .orElseThrow(() -> new ApiRequestException("Post not found", HttpStatus.NOT_FOUND));
 
@@ -226,7 +235,7 @@ public class PostService {
     }
 
     public PostResponseModel applyToPost(Integer postId, String authorizationHeader) {
-        try{
+        try {
 
             String jwtToken = authorizationHeader.substring(7);
             String userEmail = jwtService.extractUserEmail(jwtToken);

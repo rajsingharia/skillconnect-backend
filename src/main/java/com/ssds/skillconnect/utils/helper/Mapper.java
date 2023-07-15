@@ -24,6 +24,9 @@ public class Mapper {
     }
 
     public PostResponseModel Post_to_PostResponseModel(Post post) {
+
+        if(post == null) return null;
+
         return new PostResponseModel(
                 post.getPostId(),
                 post.getPostTitle(),
@@ -40,6 +43,9 @@ public class Mapper {
     }
 
     public ProjectResponseModel Project_to_ProjectCreateResponseModel(Project project) {
+
+        if(project == null) return null;
+
         return new ProjectResponseModel(
                 project.getProjectId(),
                 User_to_UserDetailResponseModel(project.getProjectCreator()),

@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 @Service
 @EnableScheduling
 @Log
-public class DeleteClosedPostOlderThanThreeMonthScheduler {
+public class DeleteClosedPostOlderThan3MonthScheduler {
 
     @Autowired
     private PostService postService;
